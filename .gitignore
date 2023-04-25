@@ -1,3 +1,4 @@
 classes/
+aws-lambda-java-core/
 /rhino/
 *.jar
