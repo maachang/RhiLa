@@ -1,4 +1,4 @@
-package rhila.core;
+package rhila.scriptable;
 
 import java.util.AbstractList;
 import java.util.ArrayList;
@@ -10,12 +10,14 @@ import java.util.ListIterator;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.Undefined;
 
+import rhila.WrapUtil;
+
 /**
  * java.util.List用Scriptable.
  */
 public class ListScriptable
 	extends AbstractList<Object> 
-	implements BaseScriptable {
+	implements BaseScriptable<List<Object>> {
 	
 	protected Scriptable parent = null;
 	protected Scriptable prototype = null;
@@ -50,6 +52,11 @@ public class ListScriptable
 		for(int i = 0; i < len; i ++) {
 			this.list.add(array[i]);
 		}
+	}
+	
+	@Override
+	public List<Object> getRaw() {
+		return list;
 	}
 	
 	@Override

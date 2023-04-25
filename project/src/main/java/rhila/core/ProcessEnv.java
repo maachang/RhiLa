@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
+import rhila.scriptable.MapScriptable;
+
 /**
  * Process.env内容.
  */

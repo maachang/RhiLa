@@ -7,6 +7,14 @@ import org.mozilla.javascript.ImporterTopLevel;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 
+import rhila.RhilaException;
+import rhila.WrapUtil;
+import rhila.scriptable.Base64Scriptable;
+import rhila.scriptable.BinaryScriptable;
+import rhila.scriptable.JsonScriptable;
+import rhila.scriptable.ListScriptable;
+import rhila.scriptable.MapScriptable;
+
 /**
  * globalオブジェクト.
  */
@@ -85,6 +93,7 @@ public class Global extends ImporterTopLevel {
     private final String[] GLOBAL_FUNCTION_LIST = {
     	"gc",
     	"eval",
+    	"binary",
     	"jsMap",
     	"jsList"
     };
@@ -105,6 +114,9 @@ public class Global extends ImporterTopLevel {
     	this.env = env;
     	this.ctx = ctx;
     	
+    	// javaPrimitiveのwrapをOff.
+    	ctx.getWrapFactory().setJavaPrimitiveWrap(false);
+    	
     	// Lambda上で実行されるので最適化不要.
     	ctx.setOptimizationLevel(-1);
     	
@@ -118,11 +130,17 @@ public class Global extends ImporterTopLevel {
 		super.defineFunctionProperties(
 			GLOBAL_FUNCTION_LIST, Global.class, ScriptableObject.DONTENUM);
 		
-		// 変数定義.
+		// 登録済み変数の削除.
 		ScriptableObject.deleteProperty(this, "global");
-		// globalは定義されてるので、削除して追加が必要.
+		ScriptableObject.deleteProperty(this, "JSON");
+		
+		// 変数定義.
 		ScriptableObject.putConstProperty(this, "global", this);
 		ScriptableObject.putConstProperty(this, "env", env);
+		ScriptableObject.putConstProperty(
+			this, "JSON", JsonScriptable.INSTANCE);
+		ScriptableObject.putConstProperty(
+			this, "Base64", Base64Scriptable.INSTANCE);
 		
 		// 初期化済み.
 		initFlag = true;
@@ -140,11 +158,40 @@ public class Global extends ImporterTopLevel {
 		return RunScript.eval((Global)thisObj, String.valueOf(args[0]));
 	}
 	
+	// binary生成.
+	public static Object binary(
+		Context cx, Scriptable thisObj, Object[] args, Function funObj) {
+		if(args == null || args.length == 0) {
+			throw new RhilaException("Argument not valid");
+		}
+		// バイナリ生成オプション群.
+		int len = args.length;
+		if(len == 1) {
+			Object o = args[0];
+			if(o instanceof byte[]) {
+				return new BinaryScriptable((byte[])o);
+			} else if(o instanceof BinaryScriptable) {
+				return new BinaryScriptable((BinaryScriptable)o);
+			} else if(o instanceof Number) {
+				return new BinaryScriptable(((Number)o).intValue());
+			} else if(o instanceof String) {
+				return new BinaryScriptable((String)o);
+			}
+		} else if(len == 2) {
+			if(args[0] instanceof String && args[1] instanceof String) {
+				return new BinaryScriptable((String)args[0], (String)args[1]);
+			}
+		}
+		throw new RhilaException("Argument not valid");		
+	}
+
+	// map生成.
 	public static Object jsMap(
 		Context cx, Scriptable thisObj, Object[] args, Function funObj) {
 		return new MapScriptable();
 	}
 	
+	// list生成.
 	public static Object jsList(
 		Context cx, Scriptable thisObj, Object[] args, Function funObj) {
 		return new ListScriptable();

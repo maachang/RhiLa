@@ -1,6 +1,6 @@
 package rhila.lib;
 
-import rhila.core.RhilaException;
+import rhila.RhilaException;
 
 /**
  * BooleanUtil.

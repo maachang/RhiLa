@@ -10,6 +10,7 @@ import java.nio.ByteBuffer;
 
 import rhila.lib.ByteArrayBuffer;
 import rhila.lib.NumberUtil;
+import rhila.scriptable.MapScriptable;
 
 /**
  * [同期]HttpClient.
@@ -30,106 +31,6 @@ public final class HttpClient {
 	//
 
 	protected HttpClient() {
-	}
-
-	/**
-	 * [GET]HttpClient接続.
-	 * @param url 対象のURLを設定します.
-	 * @param option 対象のオプションを設定します.
-	 * @return HttpResult 返却データが返されます.
-	 */
-	public static final HttpResult get(
-		String url, HttpClientOption option) {
-		if(option == null) {
-			option = new HttpClientOption();
-		}
-		return connect(url, option.setMethod(Method.GET));
-	}
-
-	/**
-	 * [POST]HttpClient接続.
-	 * @param url 対象のURLを設定します.
-	 * @param option 対象のオプションを設定します.
-	 * @return HttpResult 返却データが返されます.
-	 */
-	public static final HttpResult post(
-		String url, HttpClientOption option) {
-		if(option == null) {
-			option = new HttpClientOption();
-		}
-		return connect(url, option.setMethod(Method.POST));
-	}
-
-	/**
-	 * [JSON]HttpClient接続.
-	 *
-	 * @param url 対象のURLを設定します.
-	 * @param option 対象のオプションを設定します.
-	 * @return HttpResult 返却データが返されます.
-	 */
-	public static final HttpResult json(
-		String url, Object json, HttpClientOption option) {
-		return json(Method.POST, url, json, option);
-	}
-
-	/**
-	 * [JSON]HttpClient接続.
-	 *
-	 * @param method メソッドを設定します.
-	 * @param url 対象のURLを設定します.
-	 * @param option 対象のオプションを設定します.
-	 * @return HttpResult 返却データが返されます.
-	 */
-	public static final HttpResult json(
-		Method method, String url, Object json,
-		HttpClientOption option) {
-		if(option == null) {
-			option = new HttpClientOption();
-		}
-		return connect(url, option.setJson(json).setMethod(method));
-	}
-
-
-	/**
-	 * [DELETE]HttpClient接続.
-	 * @param url 対象のURLを設定します.
-	 * @param option 対象のオプションを設定します.
-	 * @return HttpResult 返却データが返されます.
-	 */
-	public static final HttpResult delete(
-		String url, HttpClientOption option) {
-		if(option == null) {
-			option = new HttpClientOption();
-		}
-		return connect(url, option.setMethod(Method.DELETE));
-	}
-
-	/**
-	 * [PUT]HttpClient接続.
-	 * @param url 対象のURLを設定します.
-	 * @param option 対象のオプションを設定します.
-	 * @return HttpResult 返却データが返されます.
-	 */
-	public static final HttpResult put(
-		String url, HttpClientOption option) {
-		if(option == null) {
-			option = new HttpClientOption();
-		}
-		return connect(url, option.setMethod(Method.PUT));
-	}
-
-	/**
-	 * [PATCH]HttpClient接続.
-	 * @param url 対象のURLを設定します.
-	 * @param option 対象のオプションを設定します.
-	 * @return HttpResult 返却データが返されます.
-	 */
-	public static final HttpResult patch(
-		String url, HttpClientOption option) {
-		if(option == null) {
-			option = new HttpClientOption();
-		}
-		return connect(url, option.setMethod(Method.PATCH));
 	}
 
 	// MethodがGETやDELETEの場合、URLに対してFormDataを付与.
@@ -171,8 +72,7 @@ public final class HttpClient {
 	 * @param option 対象のオプションを設定します.
 	 * @return HttpResult 返却データが返されます.
 	 */
-	public static final HttpResult connect(
-		String url, HttpClientOption option) {
+	public static final HttpResult request(String host, String path, MapScriptable option) {
 		String accessUrl;
 		HttpStatus state;
 		String location;

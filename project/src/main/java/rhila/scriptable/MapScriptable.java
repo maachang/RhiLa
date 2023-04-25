@@ -1,18 +1,21 @@
-package rhila.core;
+package rhila.scriptable;
 
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.mozilla.javascript.Scriptable;
 
+import rhila.WrapUtil;
+
 /**
  * java.util.Map用Scriptable.
  */
 public class MapScriptable
-	implements BaseScriptable, Map<String, Object> {
+	implements BaseScriptable<Map<String, Object>>, Map<String, Object> {
 	
 	protected Scriptable parent = null;
 	protected Scriptable prototype = null;
@@ -30,8 +33,8 @@ public class MapScriptable
 		this.map = map;
 	}
 	
-	@SuppressWarnings("rawtypes")
-	public Map getSrcMap() {
+	@Override
+	public Map<String, Object> getRaw() {
 		return map;
 	}
 	

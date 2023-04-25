@@ -2,7 +2,7 @@ package rhila.lib;
 
 import java.math.BigDecimal;
 
-import rhila.core.RhilaException;
+import rhila.RhilaException;
 
 /**
  * 数値ユーティリティ.

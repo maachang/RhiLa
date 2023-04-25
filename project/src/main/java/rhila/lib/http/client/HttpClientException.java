@@ -1,6 +1,6 @@
 package rhila.lib.http.client;
 
-import rhila.core.RhilaException;
+import rhila.RhilaException;
 
 /**
  * HttpClient用例外.

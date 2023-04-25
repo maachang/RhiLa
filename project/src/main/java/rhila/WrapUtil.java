@@ -1,4 +1,4 @@
-package rhila.core;
+package rhila;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -13,6 +13,8 @@ import org.mozilla.javascript.Undefined;
 import org.mozilla.javascript.Wrapper;
 
 import rhila.lib.NumberUtil;
+import rhila.scriptable.ListScriptable;
+import rhila.scriptable.MapScriptable;
 
 /**
  * javascriptからのjavaオブジェクトのラップ・アンラップ支援.
@@ -113,9 +115,10 @@ public class WrapUtil {
 		// primitive系かmozilla系の場合.
 		c = value.getClass();
 		if(c.isPrimitive() ||
-			value instanceof Exception ||
-			value instanceof String || value instanceof Boolean || value instanceof Number ||
-			c.getPackage().getName().startsWith("org.mozilla.javascript")) {
+			value instanceof Exception
+			|| value instanceof String || value instanceof Boolean
+			|| value instanceof Number
+			|| c.getPackage().getName().startsWith("org.mozilla.javascript")) {
 			return value;
 		// Map系(NativeObjectを除く)の場合.
 		} else if (!(value instanceof NativeObject) &&
@@ -147,7 +150,8 @@ public class WrapUtil {
 			// NativeDate.
 			try {
 				// リフレクションで直接取得するようにする.
-				final Method md = o.getClass().getDeclaredMethod("getJSTimeValue");
+				final Method md = o.getClass()
+					.getDeclaredMethod("getJSTimeValue");
 				md.setAccessible(true);
 				return NumberUtil.parseLong(md.invoke(o));
 			} catch (Exception e) {
@@ -173,6 +177,4 @@ public class WrapUtil {
 			throw new RhilaException(e);
 		}
 	}
-	
-	
 }

@@ -1,4 +1,4 @@
-package rhila.core;
+package rhila.scriptable;
 
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.ContextFactory;
@@ -11,7 +11,12 @@ import org.mozilla.javascript.Wrapper;
 /**
  * 基本Scriptable.
  */
-public interface BaseScriptable extends Scriptable {
+public interface BaseScriptable<T> extends Scriptable {
+	
+	// 元情報を取得.
+	default T getRaw() {
+		return null;
+	}
 	
 	@Override
 	default boolean hasInstance(Scriptable instance) {
@@ -94,5 +99,73 @@ public interface BaseScriptable extends Scriptable {
 		}
 		String arg = (typeHint == null) ? "undefined" : typeHint.getName();
 		throw Context.reportRuntimeError("Cannot find default value for object " + arg);
+	}
+	
+	//////////////////////////////////
+	// 以下空のScriptableメソッド定義.
+	//////////////////////////////////
+	
+	@Override
+	default void delete(String arg0) {
+	}
+
+	@Override
+	default void delete(int arg0) {
+	}
+
+	@Override
+	default Object get(String arg0, Scriptable arg1) {
+		return null;
+	}
+
+	@Override
+	default Object get(int arg0, Scriptable arg1) {
+		return null;
+	}
+
+	@Override
+	default String getClassName() {
+		return this.getClass().getName();
+	}
+
+	@Override
+	default Object[] getIds() {
+		return new Object[0];
+	}
+
+	@Override
+	default Scriptable getParentScope() {
+		return null;
+	}
+
+	@Override
+	default Scriptable getPrototype() {
+		return null;
+	}
+
+	@Override
+	default boolean has(String arg0, Scriptable arg1) {
+		return false;
+	}
+
+	@Override
+	default boolean has(int arg0, Scriptable arg1) {
+		return false;
+	}
+
+	@Override
+	default void put(String arg0, Scriptable arg1, Object arg2) {
+	}
+
+	@Override
+	default void put(int arg0, Scriptable arg1, Object arg2) {
+	}
+
+	@Override
+	default void setParentScope(Scriptable arg0) {
+	}
+
+	@Override
+	default void setPrototype(Scriptable arg0) {
 	}
 }

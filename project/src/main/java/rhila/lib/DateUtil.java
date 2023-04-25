@@ -17,7 +17,7 @@ import java.util.Queue;
 import java.util.TimeZone;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import rhila.core.RhilaException;
+import rhila.RhilaException;
 
 /**
  * 日付関連ユーティリティ.

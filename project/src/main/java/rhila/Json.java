@@ -1,8 +1,7 @@
-package rhila.core;
+package rhila;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -11,6 +10,8 @@ import org.mozilla.javascript.Undefined;
 
 import rhila.lib.DateUtil;
 import rhila.lib.NumberUtil;
+import rhila.scriptable.ListScriptable;
+import rhila.scriptable.MapScriptable;
 
 /**
  * Json変換処理.
@@ -19,7 +20,10 @@ import rhila.lib.NumberUtil;
 public final class Json {
 	protected Json() {}
 
+	// array.
 	private static final int TYPE_ARRAY = 0;
+	
+	// map.
 	private static final int TYPE_MAP = 1;
 
 	/**
@@ -33,16 +37,56 @@ public final class Json {
 		encodeObject(buf, target, target);
 		return buf.toString();
 	}
-
+	
 	/**
 	 * JSON形式から、オブジェクト変換.
-	 * 
-	 * @param json 対象のJSON情報を設定します.
+	 * この呼び出しでは、コメントは除去しません.
+	 *
+	 * @param json
+	 *            対象のJSON情報を設定します.
 	 * @return Object 変換されたJSON情報が返されます.
 	 */
 	public static final Object decode(String json) {
+		return decode(false, false, json);
+	}
+	
+	/**
+	 * JSON形式から、オブジェクト変換.
+	 *
+	 * @param cutComment
+	 *            コメントを削除する場合はtrue.
+	 * @param json
+	 *            対象のJSON情報を設定します.
+	 * @return Object 変換されたJSON情報が返されます.
+	 */
+	public static final Object decode(
+		boolean cutComment, String json) {
+		return decode(cutComment, false, json);
+	}
+
+	/**
+	 * JSON形式から、オブジェクト変換.
+	 *
+	 * @param cutComment
+	 *            コメントを削除する場合はtrue.
+	 * @param h2Comment
+	 *            trueの場合は -- コメントを有効に設定.
+	 * @param json
+	 *            対象のJSON情報を設定します.
+	 * @return Object 変換されたJSON情報が返されます.
+	 */
+	public static final Object decode(
+		boolean cutComment, boolean h2Comment, String json) {
 		if (json == null) {
 			return null;
+		}
+		// コメント削除条件が設定されている場合.
+		if(cutComment) {
+			// コメントを削除する.
+			json = cutComment(h2Comment, json);
+			if(json == null || json.isEmpty()) {
+				return null;
+			}
 		}
 		// 前後の無駄なスペース、タブ、改行などを除く.
 		json = json.trim();
@@ -105,7 +149,8 @@ public final class Json {
 		} else if (target instanceof char[]) {
 			buf.append("\"").append(new String((char[]) target)).append("\"");
 		} else if (target instanceof java.util.Date) {
-			buf.append("\"").append(dateToString((java.util.Date) target)).append("\"");
+			buf.append("\"").append(dateToString((java.util.Date) target))
+				.append("\"");
 		} else if (target.getClass().isArray()) {
 			if (Array.getLength(target) == 0) {
 				buf.append("[]");
@@ -118,7 +163,8 @@ public final class Json {
 	}
 
 	/** [encodeJSON]jsonMapコンバート. **/
-	private static final void encodeJsonMap(final StringBuilder buf, final Object base, final Map map) {
+	private static final void encodeJsonMap(
+		final StringBuilder buf, final Object base, final Map map) {
 		boolean flg = false;
 		Map mp = (Map) map;
 		Iterator it = mp.keySet().iterator();
@@ -140,7 +186,8 @@ public final class Json {
 	}
 
 	/** [encodeJSON]jsonListコンバート. **/
-	private static final void encodeJsonList(final StringBuilder buf, final Object base, final List list) {
+	private static final void encodeJsonList(
+		final StringBuilder buf, final Object base, final List list) {
 		boolean flg = false;
 		List lst = (List) list;
 		buf.append("[");
@@ -160,7 +207,8 @@ public final class Json {
 	}
 
 	/** [encodeJSON]json配列コンバート. **/
-	private static final void encodeJsonArray(final StringBuilder buf, final Object base, final Object list) {
+	private static final void encodeJsonArray(
+		final StringBuilder buf, final Object base, final Object list) {
 		boolean flg = false;
 		int len = Array.getLength(list);
 		buf.append("[");
@@ -217,7 +265,8 @@ public final class Json {
 			return Long.parseLong(json);
 		}
 		// 文字列コーテーション区切り.
-		else if ((json.startsWith("\"") && json.endsWith("\"")) || (json.startsWith("\'") && json.endsWith("\'"))) {
+		else if ((json.startsWith("\"") && json.endsWith("\""))
+			|| (json.startsWith("\'") && json.endsWith("\'"))) {
 			json = json.substring(1, len - 1);
 		}
 		// ISO8601の日付フォーマットかチェック.
@@ -232,46 +281,51 @@ public final class Json {
 	}
 
 	/** JSON_Token_解析処理 **/
-	private static final List<Object> analysisJsonToken(String json) {
+	private static final List<Object> analysisJsonToken(final String json) {
 		int s = -1;
 		char c;
-		int cote = -1;
+		int quote = -1;
 		int bef = -1;
 		int len = json.length();
 		List<Object> ret = new ArrayList<Object>();
 		// Token解析.
 		for (int i = 0; i < len; i++) {
 			c = json.charAt(i);
-			// コーテーション内.
-			if (cote != -1) {
-				// コーテーションの終端.
-				if (bef != '\\' && cote == c) {
+			// クォーテーション内.
+			if (quote != -1) {
+				// クォーテーションの終端.
+				if(!isStringQuotation(json, i, (char)quote)) {
 					ret.add(json.substring(s - 1, i + 1));
-					cote = -1;
+					quote = -1;
 					s = i + 1;
 				}
 			}
-			// コーテーション開始.
+			// クォーテーション開始.
 			else if (bef != '\\' && (c == '\'' || c == '\"')) {
-				cote = c;
-				if (s != -1 && s != i && bef != ' ' && bef != '　' && bef != '\t' && bef != '\n' && bef != '\r') {
+				quote = c;
+				if (s != -1 && s != i && bef != ' ' && bef != '　'
+						&& bef != '\t' && bef != '\n' && bef != '\r') {
 					ret.add(json.substring(s, i + 1));
 				}
 				s = i + 1;
 				bef = -1;
 			}
 			// ワード区切り.
-			else if (c == '[' || c == ']' || c == '{' || c == '}' || c == '(' || c == ')' || c == ':' || c == ';'
-					|| c == ',' || (c == '.' && (bef < '0' || bef > '9'))) {
-				if (s != -1 && s != i && bef != ' ' && bef != '　' && bef != '\t' && bef != '\n' && bef != '\r') {
+			else if (c == '[' || c == ']' || c == '{' || c == '}' || c == '('
+					|| c == ')' || c == ':' || c == ';' || c == ','
+					|| (c == '.' && (bef < '0' || bef > '9'))) {
+				if (s != -1 && s != i && bef != ' ' && bef != '　'
+						&& bef != '\t' && bef != '\n' && bef != '\r') {
 					ret.add(json.substring(s, i));
 				}
 				ret.add(new String(new char[] { c }));
 				s = i + 1;
 			}
 			// 連続空間区切り.
-			else if (c == ' ' || c == '　' || c == '\t' || c == '\n' || c == '\r') {
-				if (s != -1 && s != i && bef != ' ' && bef != '　' && bef != '\t' && bef != '\n' && bef != '\r') {
+			else if (c == ' ' || c == '　' || c == '\t' || c == '\n'
+					|| c == '\r') {
+				if (s != -1 && s != i && bef != ' ' && bef != '　'
+						&& bef != '\t' && bef != '\n' && bef != '\r') {
 					ret.add(json.substring(s, i));
 				}
 				s = -1;
@@ -284,9 +338,27 @@ public final class Json {
 		}
 		return ret;
 	}
+	
+	// クォーテーション区切りの終端かチェック.
+	private static final boolean isStringQuotation(
+		String src, int pos, char srcQuotation) {
+		if(src.charAt(pos) != srcQuotation) {
+			return true;
+		}
+		int yenCount = 0;
+		for(int i = pos - 1; i >= 0; i --) {
+			if(src.charAt(i) == '\\') {
+				yenCount ++;
+				continue;
+			}
+			break;
+		}
+		return (yenCount & 1) == 1;
+	}
 
 	/** Json-Token解析. **/
-	private static final Object createJsonInfo(int[] n, List<Object> token, int type, int no, int len) {
+	private static final Object createJsonInfo(
+		int[] n, List<Object> token, int type, int no, int len) {
 		String value;
 		StringBuilder before = null;
 		// List.
@@ -340,13 +412,14 @@ public final class Json {
 		}
 		// map.
 		else if (type == TYPE_MAP) {
-			Map<Object, Object> ret = new HashMap<Object, Object>();
+			Map<String, Object> ret = new MapScriptable();
 			String key = null;
 			for (int i = no + 1; i < len; i++) {
 				value = (String) token.get(i);
 				if (":".equals(value)) {
 					if (key == null) {
-						throw new RhilaException(500, "Map format is invalid(No:" + i + ")");
+						throw new RhilaException(
+							500, "Map format is invalid(No:" + i + ")");
 					}
 				} else if (",".equals(value) || "}".equals(value)) {
 					if ("}".equals(value)) {
@@ -364,7 +437,8 @@ public final class Json {
 							if (before == null) {
 								continue;
 							}
-							throw new RhilaException(500, "Map format is invalid(No:" + i + ")");
+							throw new RhilaException(
+								500, "Map format is invalid(No:" + i + ")");
 						}
 						if (before == null) {
 							ret.put(key, decodeJsonValue(null));
@@ -376,7 +450,8 @@ public final class Json {
 					}
 				} else if ("[".equals(value)) {
 					if (key == null) {
-						throw new RhilaException(500, "Map format is invalid(No:" + i + ")");
+						throw new RhilaException(
+							500, "Map format is invalid(No:" + i + ")");
 					}
 					ret.put(key, createJsonInfo(n, token, TYPE_ARRAY, i, len));
 					i = n[0];
@@ -384,7 +459,8 @@ public final class Json {
 					before = null;
 				} else if ("{".equals(value)) {
 					if (key == null) {
-						throw new RhilaException(500, "Map format is invalid(No:" + i + ")");
+						throw new RhilaException(
+							500, "Map format is invalid(No:" + i + ")");
 					}
 					ret.put(key, createJsonInfo(n, token, TYPE_MAP, i, len));
 					i = n[0];
@@ -392,7 +468,8 @@ public final class Json {
 					before = null;
 				} else if (key == null) {
 					key = value;
-					if ((key.startsWith("'") && key.endsWith("'")) || (key.startsWith("\"") && key.endsWith("\""))) {
+					if ((key.startsWith("'") && key.endsWith("'"))
+						|| (key.startsWith("\"") && key.endsWith("\""))) {
 						key = key.substring(1, key.length() - 1).trim();
 					}
 				} else {
@@ -435,4 +512,100 @@ public final class Json {
 			return null;
 		}
 	}
+	
+	/**
+	 * コメント除去.
+	 *
+	 * @param str コメント除去を行う文字列を設定します.
+	 * @return String 除外された文字列が返却されます.
+	 */
+	public static final String cutComment(boolean h2, String str) {
+		if (str == null || str.length() <= 0) {
+			return "";
+		}
+		StringBuilder buf = new StringBuilder();
+		int len = str.length();
+		int quote = -1;
+		int commentType = -1;
+		int bef = -1;
+		char c, c2;
+		for (int i = 0; i < len; i++) {
+			if (i != 0) {
+				bef = str.charAt(i - 1);
+			}
+			c = str.charAt(i);
+			// コメント内の処理.
+			if (commentType != -1) {
+				switch (commentType) {
+				case 1: // １行コメント.
+					if (c == '\n') {
+						buf.append(c);
+						commentType = -1;
+					}
+					break;
+				case 2: // 複数行コメント.
+					if (c == '\n') {
+						buf.append(c);
+					} else if (len > i + 1 && c == '*' &&
+						str.charAt(i + 1) == '/') {
+						i++;
+						commentType = -1;
+					}
+					break;
+				}
+				continue;
+			}
+			// シングル／ダブルクォーテーション内の処理.
+			if (quote != -1) {
+				if(!isStringQuotation(str, i, (char)quote)) {
+					quote = -1;
+				}
+				buf.append(c);
+				continue;
+			}
+			// コメント(// or /* ... */).
+			if (c == '/') {
+				if (len <= i + 1) {
+					buf.append(c);
+					continue;
+				}
+				c2 = str.charAt(i + 1);
+				if (c2 == '*') {
+					commentType = 2;
+					continue;
+				} else if (c2 == '/') {
+					commentType = 1;
+					continue;
+				}
+			}
+			// コメント(--)
+			// ただしこのコメント許可がある場合のみ.
+			else if (h2 && c == '-') {
+				if (len <= i + 1) {
+					buf.append(c);
+					continue;
+				}
+				c2 = str.charAt(i + 1);
+				if (c2 == '-') {
+					commentType = 1;
+					continue;
+				}
+			}
+			// コメント(#)
+			else if (c == '#') {
+				if (len <= i + 1) {
+					buf.append(c);
+					continue;
+				}
+				commentType = 1;
+				continue;
+			}
+			// クォーテーション開始.
+			else if ((c == '\'' || c == '\"') && (char) bef != '\\') {
+				quote = (int) (c & 0x0000ffff);
+			}
+			buf.append(c);
+		}
+		return buf.toString();
+	}	
 }
