@@ -9,7 +9,7 @@ import rhila.RhilaException;
 /**
  * Binary用Scriptable.
  */
-public class BinaryScriptable implements BaseScriptable<byte[]> {
+public class BinaryScriptable implements RhinoScriptable<byte[]> {
 	// 格納バイナリ.
 	private byte[] binary;
 	

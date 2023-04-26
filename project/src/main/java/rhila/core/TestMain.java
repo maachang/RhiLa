@@ -7,6 +7,9 @@ import org.mozilla.javascript.Context;
 import org.mozilla.javascript.ContextFactory;
 import org.mozilla.javascript.Undefined;
 
+/**
+ * コマンド実行テスト用.
+ */
 public class TestMain {
 	
 	public static final void main(String[] args) throws Exception {

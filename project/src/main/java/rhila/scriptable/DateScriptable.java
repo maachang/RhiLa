@@ -5,7 +5,6 @@ import java.util.Arrays;
 import java.util.Date;
 
 import org.mozilla.javascript.Context;
-import org.mozilla.javascript.Function;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.Undefined;
 
@@ -20,7 +19,7 @@ import rhila.lib.NumberUtil;
  */
 @SuppressWarnings("deprecation")
 public class DateScriptable extends java.util.Date
-	implements BaseScriptable<Date>, Function {
+	implements RhinoScriptable<Date>, RhinoFunction {
 	private static final long serialVersionUID = -1516184127284167794L;
 	
 	// 汎用表示.
@@ -46,6 +45,15 @@ public class DateScriptable extends java.util.Date
 	}
 	
 	// コンストラクタ.
+	public DateScriptable(Date date, boolean staticScriptableFlag) {
+		if(date == null) {
+			throw new RhilaException("Argument not valid");
+		}
+		this.date = new Date(date.getTime());
+		this.staticScriptableFlag = staticScriptableFlag;
+	}
+	
+	// コンストラクタ.
 	public DateScriptable(DateScriptable date) {
 		if(date == null) {
 			throw new RhilaException("Argument not valid");
@@ -56,6 +64,11 @@ public class DateScriptable extends java.util.Date
 	// コンストラクタ.
 	public DateScriptable(long time) {
 		this.date = new Date(time);
+	}
+	
+	// コンストラクタ.
+	public DateScriptable(Number time) {
+		this.date = new Date(((Number)time).longValue());
 	}
 	
 	// コンストラクタ.
@@ -214,6 +227,11 @@ public class DateScriptable extends java.util.Date
 	///////////
 	
 	@Override
+	public String getName() {
+		return "Date";
+	}
+	
+	@Override
 	public Object get(String arg0, Scriptable arg1) {
 		return getFunction(arg0);
 	}
@@ -274,29 +292,35 @@ public class DateScriptable extends java.util.Date
 	
 	// [js]Function.
 	@Override
-	public final Object call(Context arg0, Scriptable arg1, Scriptable arg2, Object[] arg3) {
+	public final Object function(Context arg0, Scriptable arg1, Scriptable arg2, Object[] arg3) {
 		return SYMBOL;
 	}
 	
 	// [js]コンストラクタ.
 	@Override
-	public final Scriptable construct(Context arg0, Scriptable arg1, Object[] arg2) {
+	public final Scriptable newInstance(Context arg0, Scriptable arg1, Object[] arg2) {
 		try {
 			DateScriptable ret = null;
 			if(arg2.length == 0) {
+				// 空のDate.
 				ret = new DateScriptable();
 			} else if(arg2.length == 1) {
 				Object o = arg2[0];
 				if(o instanceof Date) {
+					// Date指定.
 					ret = new DateScriptable((Date)o);
 				} else if(o instanceof DateScriptable) {
+					// DateScriptable指定.
 					ret = new DateScriptable((DateScriptable)o);
-				} else if(o instanceof Long) {
-					ret = new DateScriptable((Long)o);
+				} else if(o instanceof Number) {
+					// Number指定.
+					ret = new DateScriptable(((Number)o).longValue());
 				} else if(o instanceof String) {
+					// 文字変換.
 					ret = new DateScriptable((String)o);
 				}
 			}
+			// 複数パラメータの場合.
 			if(ret == null) {
 				ret = new DateScriptable(arg2);
 			}
@@ -309,7 +333,7 @@ public class DateScriptable extends java.util.Date
 			throw new RhilaException(t);
 		}
 	}
-	
+
 	// functionリストを生成.
 	private final class FunctionList extends AbstractRhinoFunction {
 		private int type;
@@ -322,7 +346,8 @@ public class DateScriptable extends java.util.Date
 		}
 		
 		// メソッド実行.
-		public Object function(Context ctx, Scriptable scope, Scriptable thisObj, Object[] args) {
+		public Object function(
+			Context ctx, Scriptable scope, Scriptable thisObj, Object[] args) {
 			if (args.length <= 0) {
 				switch(type) {
 				case 0: //"getDate":

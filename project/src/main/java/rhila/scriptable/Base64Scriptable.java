@@ -9,7 +9,7 @@ import rhila.RhilaException;
 /**
  * base64Scriptable.
  */
-public class Base64Scriptable implements BaseScriptable<Object> {
+public class Base64Scriptable implements RhinoScriptable<Object> {
 	
 	@Override
 	public Object get(String arg0, Scriptable arg1) {

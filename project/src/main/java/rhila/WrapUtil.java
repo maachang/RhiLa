@@ -1,5 +1,7 @@
 package rhila;
 
+import java.util.Date;
+
 import org.mozilla.javascript.NativeArray;
 import org.mozilla.javascript.NativeObject;
 import org.mozilla.javascript.Scriptable;
@@ -61,6 +63,9 @@ public class WrapUtil {
 		// 空系の場合.
 		if(value == null || value instanceof Undefined) {
 			return null;
+		} else if (value instanceof java.util.Date &&
+			!(value instanceof Scriptable)) {
+			return new DateScriptable((Date)value, false);
 		// wrapperされている場合.
 		} else if(value instanceof Wrapper) {
 			return ((Wrapper)value).unwrap();
@@ -71,11 +76,6 @@ public class WrapUtil {
 		} else if (value instanceof NativeArray) {
 			return new ListScriptable((java.util.List)value);
 		}
-		// NativeDateの場合.
-		//Long unixTime = convertRhinoNativeDateByLong(value);
-		//if(unixTime != null) {
-		//	return new Date(unixTime);
-		//}
 		return value;
 	}
 	
@@ -114,17 +114,15 @@ public class WrapUtil {
 			|| value instanceof Number
 			|| c.getPackage().getName().startsWith("org.mozilla.javascript")) {
 			return value;
-		// Map系(NativeObjectを除く)の場合.
-		} else if (!(value instanceof NativeObject) &&
-			value instanceof java.util.Map) {
+		// Map系の場合.
+		} else if (value instanceof java.util.Map) {
 			return new MapScriptable((java.util.Map)value);
-		// Array系(NativeArrayを除く)の場合.
-		} else if (!(value instanceof NativeArray) &&
-			value instanceof java.util.List) {
+		// Array系の場合.
+		} else if (value instanceof java.util.List) {
 			return new ListScriptable((java.util.List)value);
 		// Date系の場合.
-		} else if(value instanceof java.util.Date) {
-			return createNativeDate(((java.util.Date)value).getTime());
+		} else if (value instanceof java.util.Date) {
+			return new DateScriptable((Date)value, false);
 		}
 		// 処理が正常でない場合.
 		if(result != null) {
@@ -133,45 +131,4 @@ public class WrapUtil {
 		return value;
 	}
 	
-	/**
-	 * rhinoのNativeDateオブジェクトの場合は、java.util.Dateに変換.
-	 * @param o 対象のオブジェクトを設定します.
-	 * @return Long 
-	 */
-	/**
-	public static final Long convertRhinoNativeDateByLong(Object o) {
-		if (o instanceof IdScriptableObject &&
-			"Date".equals(((IdScriptableObject)o).getClassName())) {
-			// NativeDate.
-			try {
-				// リフレクションで直接取得するようにする.
-				final Method md = o.getClass()
-					.getDeclaredMethod("getJSTimeValue");
-				md.setAccessible(true);
-				return NumberUtil.parseLong(md.invoke(o));
-			} catch (Exception e) {
-				// エラーの場合は処理しない.
-			}
-		}
-		return null;
-	}
-	**/
-	
-	// nativeDateを生成.
-	private static final Object createNativeDate(long time) {
-		/**
-		try {
-			// リフレクションで作成する.
-			Class<?> c = Class.forName("org.mozilla.javascript.NativeDate");
-			// static Object jsConstructor(Object[])のメソッドからNativeDateを作成.
-			Method m = c.getDeclaredMethod("jsConstructor", Object[].class);
-			m.setAccessible(true); // private date
-			return m.invoke(null, new Object[] { new Object[] { (double)time } });
-		} catch(Exception e) {
-			throw new RhilaException(e);
-		}**/
-		// ただNativeDateの生成は上記コードでは出来ないので、代替え的なオブジェクトで
-		// 対応するようにする.
-		return new DateScriptable(time);
-	}
 }

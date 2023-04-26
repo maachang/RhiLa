@@ -15,7 +15,7 @@ import rhila.WrapUtil;
  * java.util.Map用Scriptable.
  */
 public class MapScriptable
-	implements BaseScriptable<Map<String, Object>>, Map<String, Object> {
+	implements RhinoScriptable<Map<String, Object>>, Map<String, Object> {
 	
 	protected Scriptable parent = null;
 	protected Scriptable prototype = null;

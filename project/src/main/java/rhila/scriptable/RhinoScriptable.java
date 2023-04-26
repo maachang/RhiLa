@@ -11,7 +11,7 @@ import org.mozilla.javascript.Wrapper;
 /**
  * 基本Scriptable.
  */
-public interface BaseScriptable<T> extends Scriptable {
+public interface RhinoScriptable<T> extends Scriptable {
 	
 	// 元情報を取得.
 	default T getRaw() {

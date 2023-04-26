@@ -18,7 +18,7 @@ import rhila.WrapUtil;
  */
 public class ListScriptable
 	extends AbstractList<Object> 
-	implements BaseScriptable<List<Object>> {
+	implements RhinoScriptable<List<Object>> {
 	
 	protected Scriptable parent = null;
 	protected Scriptable prototype = null;

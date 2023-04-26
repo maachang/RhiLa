@@ -9,7 +9,7 @@ import rhila.RhilaException;
 /**
  * jsonScriptable.
  */
-public class JsonScriptable implements BaseScriptable<Object> {
+public class JsonScriptable implements RhinoScriptable<Object> {
 	
 	@Override
 	public Object get(String arg0, Scriptable arg1) {
