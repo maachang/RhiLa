@@ -19,6 +19,8 @@ public class ProcessEnv extends MapScriptable {
 	public ProcessEnv() {
 		super.map = new HashMap();
 		Map<String, String> m = System.getenv();
+		// System.getenv()のMapはput系がunsupportエラーになるので、
+		// こんな感じで処理をする必要がある.
 		Iterator<Entry<String, String>> it = m.entrySet().iterator();
 		Entry<String, String> e;
 		while(it.hasNext()) {

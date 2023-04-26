@@ -3,12 +3,12 @@ package rhila.scriptable;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.mozilla.javascript.Scriptable;
 
+import rhila.Json;
 import rhila.WrapUtil;
 
 /**
@@ -151,7 +151,8 @@ public class MapScriptable
 	
 	@Override
 	public String toString() {
-		return "[map]";
+		//return "[map]";
+		return Json.encode(map);
 	}
 	
 	@Override

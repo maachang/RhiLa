@@ -11,19 +11,20 @@ import rhila.RhilaException;
  */
 public class JsonScriptable implements BaseScriptable<Object> {
 	
-	// jsで利用するJSON処理.
-	public static final JsonScriptable INSTANCE =
-		new JsonScriptable();
-	
 	@Override
 	public Object get(String arg0, Scriptable arg1) {
-		if("stringify".equals(arg0)) {
+		return getFunction(arg0);
+	}
+	
+	// function取得.
+	private static final Object getFunction(String name) {
+		switch(name) {
+		case "stringify":
 			if(STRINGIFY == null) {
 				STRINGIFY = new Stringify();
 			}
 			return STRINGIFY;
-		}
-		if("parse".equals(arg0)) {
+		case "parse":
 			if(PARSE == null) {
 				PARSE = new Parse();
 			}

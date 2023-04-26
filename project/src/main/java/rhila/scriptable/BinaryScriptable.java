@@ -106,19 +106,25 @@ public class BinaryScriptable implements BaseScriptable<byte[]> {
 	
 	@Override
 	public Object get(String arg0, Scriptable arg1) {
-		if("length".equals(arg0)) {
+		return getFunction(arg0); 
+	}
+	
+	// function取得.
+	private final Object getFunction(String name) {
+		switch(name) {
+		case "length":
 			return binary.length;
-		} else if("toString".equals(arg0)) {
+		case "toString":
 			if(TOSTRING == null) {
 				TOSTRING = new ToString();
 			}
 			return TOSTRING;
-		} else if("toBase64".equals(arg0)) {
+		case "toBase64":
 			if(TOBASE64 == null) {
 				TOBASE64 = new ToBase64();
 			}
 			return TOBASE64;
-		} else if("copy".equals(arg0)) {
+		case "copy":
 			if(COPY == null) {
 				COPY = new Copy();
 			}

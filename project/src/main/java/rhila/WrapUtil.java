@@ -1,18 +1,12 @@
 package rhila;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.util.Date;
-
-import org.mozilla.javascript.IdScriptableObject;
 import org.mozilla.javascript.NativeArray;
 import org.mozilla.javascript.NativeObject;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.Undefined;
 import org.mozilla.javascript.Wrapper;
 
-import rhila.lib.NumberUtil;
+import rhila.scriptable.DateScriptable;
 import rhila.scriptable.ListScriptable;
 import rhila.scriptable.MapScriptable;
 
@@ -78,10 +72,10 @@ public class WrapUtil {
 			return new ListScriptable((java.util.List)value);
 		}
 		// NativeDateの場合.
-		Long unixTime = convertRhinoNativeDateByLong(value);
-		if(unixTime != null) {
-			return new Date(unixTime);
-		}
+		//Long unixTime = convertRhinoNativeDateByLong(value);
+		//if(unixTime != null) {
+		//	return new Date(unixTime);
+		//}
 		return value;
 	}
 	
@@ -144,6 +138,7 @@ public class WrapUtil {
 	 * @param o 対象のオブジェクトを設定します.
 	 * @return Long 
 	 */
+	/**
 	public static final Long convertRhinoNativeDateByLong(Object o) {
 		if (o instanceof IdScriptableObject &&
 			"Date".equals(((IdScriptableObject)o).getClassName())) {
@@ -160,21 +155,23 @@ public class WrapUtil {
 		}
 		return null;
 	}
+	**/
 	
 	// nativeDateを生成.
 	private static final Object createNativeDate(long time) {
+		/**
 		try {
 			// リフレクションで作成する.
 			Class<?> c = Class.forName("org.mozilla.javascript.NativeDate");
-			Field f = c.getDeclaredField("date");
-			f.setAccessible(true); // private date
-			Constructor<?> cs = c.getDeclaredConstructor();
-			cs.setAccessible(true); // private NativeDate
-			Object o = cs.newInstance();
-			f.set(o, (double)time);
-			return o;
+			// static Object jsConstructor(Object[])のメソッドからNativeDateを作成.
+			Method m = c.getDeclaredMethod("jsConstructor", Object[].class);
+			m.setAccessible(true); // private date
+			return m.invoke(null, new Object[] { new Object[] { (double)time } });
 		} catch(Exception e) {
 			throw new RhilaException(e);
-		}
+		}**/
+		// ただNativeDateの生成は上記コードでは出来ないので、代替え的なオブジェクトで
+		// 対応するようにする.
+		return new DateScriptable(time);
 	}
 }

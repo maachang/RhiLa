@@ -10,6 +10,7 @@ import java.util.ListIterator;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.Undefined;
 
+import rhila.Json;
 import rhila.WrapUtil;
 
 /**
@@ -208,7 +209,8 @@ public class ListScriptable
 	
 	@Override
 	public String toString() {
-		return "[list]";
+		//return "[list]";
+		return Json.encode(list);
 	}
 	
 	@Override

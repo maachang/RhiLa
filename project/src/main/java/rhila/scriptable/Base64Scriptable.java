@@ -5,23 +5,26 @@ import org.mozilla.javascript.Scriptable;
 
 import rhila.Base64;
 import rhila.RhilaException;
+
 /**
  * base64Scriptable.
  */
 public class Base64Scriptable implements BaseScriptable<Object> {
-	// jsで利用するBASE64処理.
-	public static final Base64Scriptable INSTANCE =
-		new Base64Scriptable();
 	
 	@Override
 	public Object get(String arg0, Scriptable arg1) {
-		if("encode".equals(arg0)) {
+		return getFunction(arg0);
+	}
+	
+	// function取得.
+	private static final Object getFunction(String name) {
+		switch(name) {
+		case "encode":
 			if(ENCODE == null) {
 				ENCODE = new Encode();
 			}
-			return ENCODE;
-		}
-		if("decode".equals(arg0)) {
+			return ENCODE;			
+		case "decode":
 			if(DECODE == null) {
 				DECODE = new Decode();
 			}
