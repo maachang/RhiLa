@@ -5,12 +5,12 @@ import org.mozilla.javascript.WrappedException;
 import rhila.RhilaException;
 
 /**
- * js実行.
+ * jsを実行する.
  */
-public class RunScript {
+public final class RunScript {
 	
 	// static専用.
-	private RunScript() {}
+	protected RunScript() {}
 	
 	// スクリプト実行.
 	public static final Object eval(Global global, String script) {
@@ -61,24 +61,13 @@ public class RunScript {
 	// })();
 	//
 	public static final Object loadLibrary(Global global, String script, String scriptName) {
-		try {
-			return global.getContext().evaluateString(global,
-				new StringBuilder(LIB_HEADER)
-					.append(script)
-					.append(LIB_FOODER)
-					.toString(),
-				scriptName, LIB_START_LINE, null);
-		} catch(WrappedException we) {
-			Throwable t = we.getWrappedException();
-			if(t instanceof RhilaException) {
-				throw (RhilaException)t;
-			}
-			throw new RhilaException(t);
-		} catch(RhilaException re) {
-			throw re;
-		} catch(Throwable t) {
-			throw new RhilaException(t);
-		}
+		return eval(
+			global
+			,new StringBuilder(LIB_HEADER)
+				.append(script)
+				.append(LIB_FOODER)
+				.toString() 
+			,scriptName, LIB_START_LINE);
 	}
 	
 }

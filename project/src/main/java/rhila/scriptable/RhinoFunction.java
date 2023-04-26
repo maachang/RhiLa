@@ -17,7 +17,7 @@ public interface RhinoFunction extends Function {
 	@Override
 	default Object call(Context ctx, Scriptable scope, Scriptable thisObj, Object[] args) {
 		try {
-			return WrapUtil.wrap(function(ctx, scope, thisObj, WrapUtil.unwrapArgs(args))); 
+			return RhilaWrapper.wrap(function(ctx, scope, thisObj, RhilaWrapper.unwrapArgs(args))); 
 		} catch(RhilaException rwe) {
 			throw rwe;
 		} catch(Throwable t) {
@@ -30,7 +30,7 @@ public interface RhinoFunction extends Function {
 	@Override
 	default Scriptable construct(Context arg0, Scriptable arg1, Object[] arg2) {
 		try {
-			return newInstance(arg0, arg1, WrapUtil.unwrapArgs(arg2));
+			return newInstance(arg0, arg1, RhilaWrapper.unwrapArgs(arg2));
 		} catch(RhilaException rwe) {
 			throw rwe;
 		} catch(Throwable t) {

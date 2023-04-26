@@ -11,7 +11,7 @@ import org.mozilla.javascript.Undefined;
 import rhila.RhilaException;
 import rhila.scriptable.ListScriptable;
 import rhila.scriptable.MapScriptable;
-import rhila.scriptable.WrapUtil;
+import rhila.scriptable.RhilaWrapper;
 
 /**
  * Json変換処理.
@@ -124,7 +124,7 @@ public final class Json {
 		if(Undefined.instance.equals(target)) {
 			target = null;
 		} else if(target != null) {
-			target = WrapUtil.unwrap(target);
+			target = RhilaWrapper.unwrap(target);
 		}
 		if (target == null) {
 			buf.append("null");

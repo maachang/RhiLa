@@ -326,8 +326,6 @@ public class DateScriptable extends java.util.Date
 			if(ret == null) {
 				ret = new DateScriptable(arg2);
 			}
-			// コンストラクタ呼び出しなのでstaticをfalse.
-			ret.staticScriptableFlag = false;
 			return ret;
 		} catch(RhilaException rwe) {
 			throw rwe;

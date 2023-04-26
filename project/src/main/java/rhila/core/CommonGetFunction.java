@@ -79,6 +79,16 @@ public final class CommonGetFunction implements RhinoGetFunction {
 				CLASSNAME = new ClassName();
 			}
 			return CLASSNAME;
+		case "print":
+			if(PRINT == null) {
+				PRINT = new Print();
+			}
+			return PRINT;
+		case "errPrint":
+			if(ERRPRINT == null) {
+				ERRPRINT = new ErrPrint();
+			}
+			return ERRPRINT;
 		}
 		return null;
 	}
@@ -108,6 +118,57 @@ public final class CommonGetFunction implements RhinoGetFunction {
 		}
 	}
 	private ClassName CLASSNAME = null;
+	
+    // Print.
+	private final class Print extends AbstractRhinoFunction {
+		protected Print() {}
+		@Override
+		public String getName() {
+			return "print";
+		}
+
+		@Override
+		public Object function(Context ctx, Scriptable scope, Scriptable thisObj, Object[] args) {
+			if(args == null || args.length == 0 ||
+				args[0] == null || args[0] instanceof Undefined) {
+				System.out.println();
+			} else {
+				final int len = args.length;
+				for(int i = 0; i < len; i ++) {
+					System.out.println(args[i]);
+				}
+				
+			}
+			return Undefined.instance;
+		}
+	}
+	private Print PRINT = null;
+	
+    // Print.
+	private final class ErrPrint extends AbstractRhinoFunction {
+		protected ErrPrint() {}
+		@Override
+		public String getName() {
+			return "errPrint";
+		}
+
+		@Override
+		public Object function(Context ctx, Scriptable scope, Scriptable thisObj, Object[] args) {
+			if(args == null || args.length == 0 ||
+				args[0] == null || args[0] instanceof Undefined) {
+				System.err.println();
+			} else {
+				final int len = args.length;
+				for(int i = 0; i < len; i ++) {
+					System.err.println(args[i]);
+				}
+				
+			}
+			return Undefined.instance;
+		}
+	}
+	private ErrPrint ERRPRINT = null;
+
     
     // javaガページコレクター実行.
 	private final class Gc extends AbstractRhinoFunction {
@@ -120,7 +181,7 @@ public final class CommonGetFunction implements RhinoGetFunction {
 		@Override
 		public Object function(Context ctx, Scriptable scope, Scriptable thisObj, Object[] args) {
 			System.gc();
-			return null;
+			return Undefined.instance;
 		}
 	}
 	private Gc GC = null;

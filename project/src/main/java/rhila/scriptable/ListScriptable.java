@@ -125,7 +125,7 @@ public class ListScriptable
 				ret = list.get(Integer.parseInt(arg0));
 			}
 			if(ret != null && !(ret instanceof Undefined)) {
-				return WrapUtil.wrap(ret);
+				return RhilaWrapper.wrap(ret);
 			}
 		} catch(Exception e) {}
 		return NOT_FOUND;
@@ -141,7 +141,7 @@ public class ListScriptable
 				ret = list.get(arg0);
 			}
 			if(ret != null && !(ret instanceof Undefined)) {
-				return WrapUtil.wrap(ret);
+				return RhilaWrapper.wrap(ret);
 			}
 		} catch(Exception e) {}
 		return NOT_FOUND;
@@ -191,11 +191,11 @@ public class ListScriptable
 			final int n = Integer.parseInt(arg0);
 			if(list instanceof Scriptable) {
 				((Scriptable)list).put(
-					n, (Scriptable)list, WrapUtil.unwrap(arg2));
+					n, (Scriptable)list, RhilaWrapper.unwrap(arg2));
 				return;
 			}
 			appendList(n);
-			list.set(n, WrapUtil.unwrap(arg2));
+			list.set(n, RhilaWrapper.unwrap(arg2));
 		} catch(Exception e) {}
 	}
 
@@ -204,11 +204,11 @@ public class ListScriptable
 		try {
 			if(list instanceof Scriptable) {
 				((Scriptable)list).put(
-					arg0, (Scriptable)list, WrapUtil.unwrap(arg2));
+					arg0, (Scriptable)list, RhilaWrapper.unwrap(arg2));
 				return;
 			}
 			appendList(arg0);
-			list.set(arg0, WrapUtil.unwrap(arg2));
+			list.set(arg0, RhilaWrapper.unwrap(arg2));
 		} catch(Exception e) {}
 	}
 	

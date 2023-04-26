@@ -98,25 +98,25 @@ public class MapScriptable
 		if("length".equals(arg0)) {
 			return map.size();
 		} else if(map instanceof Scriptable) {
-			return WrapUtil.wrap(
+			return RhilaWrapper.wrap(
 				((Scriptable)map).get(arg0, (Scriptable)map));
 		} else if(!map.containsKey(arg0)) {
 			return NOT_FOUND;
 		}
-		return WrapUtil.wrap(map.get(arg0));
+		return RhilaWrapper.wrap(map.get(arg0));
 	}
 
 	@Override
 	public Object get(int arg0, Scriptable arg1) {
 		final String key = String.valueOf(arg0);
 		if(map instanceof Scriptable) {
-			return WrapUtil.wrap(
+			return RhilaWrapper.wrap(
 				((Scriptable)map).get(key, (Scriptable)map));
 		}
 		if(!map.containsKey(key)) {
 			return NOT_FOUND;
 		}
-		return WrapUtil.wrap(map.get(key));
+		return RhilaWrapper.wrap(map.get(key));
 	}
 
 	@Override
@@ -158,9 +158,9 @@ public class MapScriptable
 	@Override
 	public void put(String arg0, Scriptable arg1, Object arg2) {
 		if(map instanceof Scriptable) {
-			((Scriptable)map).put(arg0, (Scriptable)map, WrapUtil.unwrap(arg2));
+			((Scriptable)map).put(arg0, (Scriptable)map, RhilaWrapper.unwrap(arg2));
 		} else {
-			map.put(arg0, WrapUtil.unwrap(arg2));
+			map.put(arg0, RhilaWrapper.unwrap(arg2));
 		}
 	}
 
@@ -168,9 +168,9 @@ public class MapScriptable
 	public void put(int arg0, Scriptable arg1, Object arg2) {
 		if(map instanceof Scriptable) {
 			((Scriptable)map).put(
-				String.valueOf(arg0), (Scriptable)map, WrapUtil.unwrap(arg2));
+				String.valueOf(arg0), (Scriptable)map, RhilaWrapper.unwrap(arg2));
 		} else {
-			map.put(String.valueOf(arg0), WrapUtil.unwrap(arg2));
+			map.put(String.valueOf(arg0), RhilaWrapper.unwrap(arg2));
 		}
 	}
 	

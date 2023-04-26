@@ -9,11 +9,11 @@ import org.mozilla.javascript.Undefined;
 import org.mozilla.javascript.Wrapper;
 
 /**
- * javascriptからのjavaオブジェクトのラップ・アンラップ支援.
+ * RhilaErapper / Unwrapper.
  */
 @SuppressWarnings("rawtypes")
-public class WrapUtil {
-	protected WrapUtil() {}
+public class RhilaWrapper {
+	protected RhilaWrapper() {}
 	
 	/**
 	 * Javaのパラメータとしてアンラップ.
