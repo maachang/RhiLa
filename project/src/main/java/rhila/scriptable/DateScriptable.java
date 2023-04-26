@@ -29,7 +29,7 @@ public class DateScriptable extends java.util.Date
 	private Date date;
 	
 	// これがtrueの場合Scriptableのコンストラクタ呼び出しではない.
-	private boolean staticScriptableFlag = true;
+	private boolean staticScriptableFlag = false;
 	
 	// コンストラクタ.
 	public DateScriptable() {
@@ -42,15 +42,6 @@ public class DateScriptable extends java.util.Date
 			throw new RhilaException("Argument not valid");
 		}
 		this.date = new Date(date.getTime());
-	}
-	
-	// コンストラクタ.
-	public DateScriptable(Date date, boolean staticScriptableFlag) {
-		if(date == null) {
-			throw new RhilaException("Argument not valid");
-		}
-		this.date = new Date(date.getTime());
-		this.staticScriptableFlag = staticScriptableFlag;
 	}
 	
 	// コンストラクタ.
@@ -108,6 +99,17 @@ public class DateScriptable extends java.util.Date
 	@Override
 	public String toString() {
 		return SYMBOL;
+	}
+	
+	// static定義を取得.
+	public boolean isStatic() {
+		return staticScriptableFlag;
+	}
+	
+	// static定義を設定.
+	public DateScriptable setStatic(boolean staticFlag) {
+		staticScriptableFlag = staticFlag;
+		return this;
 	}
 	
 	//////////////////////

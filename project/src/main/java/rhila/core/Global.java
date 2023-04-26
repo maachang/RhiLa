@@ -7,14 +7,9 @@ import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 
 import rhila.RhilaException;
-import rhila.WrapUtil;
-import rhila.scriptable.AbstractRhinoFunction;
-import rhila.scriptable.Base64Scriptable;
-import rhila.scriptable.BinaryScriptable;
-import rhila.scriptable.DateScriptable;
-import rhila.scriptable.JsonScriptable;
-import rhila.scriptable.ListScriptable;
-import rhila.scriptable.MapScriptable;
+import rhila.lib.ConvertGetFunction;
+import rhila.scriptable.RhinoGetFunction;
+import rhila.scriptable.WrapUtil;
 
 /**
  * globalオブジェクト.
@@ -70,15 +65,25 @@ public class Global extends ImporterTopLevel {
         initGlobal(factory.enterContext(), env);
     }
     
+    // 利用可能なGlobalFunction群登録リスト.
+    private static final RhinoGetFunction[] GET_FUNCTIONS = new RhinoGetFunction[] {
+    	CommonGetFunction.getInstance()
+    	,ConvertGetFunction.getInstance()
+    };
+    private static final int GET_FUNCTION_LENGTH = GET_FUNCTIONS.length;
+    
+    // global情報を取得.
 	@Override
 	public Object get(String arg0, Scriptable arg1) {
-		// 登録メソッドを取得.
-		Object ret = getFunction(arg0);
-		if(ret == null) {
-			// 存在しない場合はGlobal内容を取得.
-			ret = WrapUtil.wrap(super.get(arg0, arg1));
+		Object ret = null;
+		for(int i = 0; i < GET_FUNCTION_LENGTH; i ++) {
+			ret = GET_FUNCTIONS[i].getFunction(arg0);
+			if(ret != null) {
+				return ret;
+			}
 		}
-		return ret;
+		// 存在しない場合はGlobal内容を取得.
+		return WrapUtil.wrap(super.get(arg0, arg1));
 	}
 
 	@Override
@@ -135,154 +140,5 @@ public class Global extends ImporterTopLevel {
 		// 初期化済み.
 		initFlag = true;
     }
-    
-    // 予約Global定義を取得.
-	private final Object getFunction(String name) {
-		switch(name) {
-		case "Date":
-			if(DATE == null) {
-				DATE = new DateScriptable();
-			}
-			return DATE;			
-		case "JSON":
-			if(JSON == null) {
-				JSON = new JsonScriptable();
-			}
-			return JSON;			
-		case "Base64": 
-			if(BASE64 == null) {
-				BASE64 = new Base64Scriptable();
-			}
-			return BASE64;
-		case "gc":
-			if(GC == null) {
-				GC = new Gc();
-			}
-			return GC;
-		case "eval":
-			if(EVAL == null) {
-				EVAL = new Eval();
-			}
-			return EVAL;
-		case "binary":
-			if(BINARY == null) {
-				BINARY = new Binary();
-			}
-			return BINARY;
-		case "jsMap":
-			if(JSMAP == null) {
-				JSMAP = new JsMap();
-			}
-			return JSMAP;
-		case "jsList":
-			if(JSLIST == null) {
-				JSLIST = new JsList();
-			}
-			return JSLIST;			
-		}
-		return null;
-	}
-	
-    // Global利用可能オブジェクト.
-    private JsonScriptable JSON = null;
-    private Base64Scriptable BASE64 = null;
-    private DateScriptable DATE = null;
-    
-    // javaガページコレクター実行.
-	private final class Gc extends AbstractRhinoFunction {
-		protected Gc() {}
-		@Override
-		public String getName() {
-			return "gc";
-		}
-
-		@Override
-		public Object function(Context ctx, Scriptable scope, Scriptable thisObj, Object[] args) {
-			System.gc();
-			return null;
-		}
-	}
-	private Gc GC = null;
-	
-    // evalでスクリプト実行.
-	private final class Eval extends AbstractRhinoFunction {
-		protected Eval() {}
-		@Override
-		public String getName() {
-			return "eval";
-		}
-
-		@Override
-		public Object function(Context ctx, Scriptable scope, Scriptable thisObj, Object[] args) {
-			return RunScript.eval((Global)thisObj, String.valueOf(args[0]));
-		}
-	}
-	private Eval EVAL = null;
-	
-	// binary生成.
-	private final class Binary extends AbstractRhinoFunction {
-		protected Binary() {}
-		@Override
-		public String getName() {
-			return "binary";
-		}
-
-		@Override
-		public Object function(Context ctx, Scriptable scope, Scriptable thisObj, Object[] args) {
-			if(args == null || args.length == 0) {
-				throw new RhilaException("Argument not valid");
-			}
-			// バイナリ生成オプション群.
-			int len = args.length;
-			if(len == 1) {
-				Object o = args[0];
-				if(o instanceof byte[]) {
-					return new BinaryScriptable((byte[])o);
-				} else if(o instanceof BinaryScriptable) {
-					return new BinaryScriptable((BinaryScriptable)o);
-				} else if(o instanceof Number) {
-					return new BinaryScriptable(((Number)o).intValue());
-				} else if(o instanceof String) {
-					return new BinaryScriptable((String)o);
-				}
-			} else if(len == 2) {
-				if(args[0] instanceof String && args[1] instanceof String) {
-					return new BinaryScriptable((String)args[0], (String)args[1]);
-				}
-			}
-			throw new RhilaException("Argument not valid");		
-		}
-	}
-	private Binary BINARY = null;
-
-	// map生成.
-	private final class JsMap extends AbstractRhinoFunction {
-		protected JsMap() {}
-		@Override
-		public String getName() {
-			return "jsMap";
-		}
-
-		@Override
-		public Object function(Context ctx, Scriptable scope, Scriptable thisObj, Object[] args) {
-			return new MapScriptable();
-		}
-	}
-	private JsMap JSMAP = null;
-	
-	// list生成.
-	private final class JsList extends AbstractRhinoFunction {
-		protected JsList() {}
-		@Override
-		public String getName() {
-			return "jsList";
-		}
-
-		@Override
-		public Object function(Context ctx, Scriptable scope, Scriptable thisObj, Object[] args) {
-			return new ListScriptable();
-		}
-	}
-	private JsList JSLIST = null;
 }
 

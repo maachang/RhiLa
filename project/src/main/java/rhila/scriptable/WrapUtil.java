@@ -1,4 +1,4 @@
-package rhila;
+package rhila.scriptable;
 
 import java.util.Date;
 
@@ -7,10 +7,6 @@ import org.mozilla.javascript.NativeObject;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.Undefined;
 import org.mozilla.javascript.Wrapper;
-
-import rhila.scriptable.DateScriptable;
-import rhila.scriptable.ListScriptable;
-import rhila.scriptable.MapScriptable;
 
 /**
  * javascriptからのjavaオブジェクトのラップ・アンラップ支援.
@@ -63,12 +59,15 @@ public class WrapUtil {
 		// 空系の場合.
 		if(value == null || value instanceof Undefined) {
 			return null;
-		} else if (value instanceof java.util.Date &&
-			!(value instanceof Scriptable)) {
-			return new DateScriptable((Date)value, false);
+		}
 		// wrapperされている場合.
-		} else if(value instanceof Wrapper) {
-			return ((Wrapper)value).unwrap();
+		if(value instanceof Wrapper) {
+			value = ((Wrapper)value).unwrap();
+		}
+		// Dateの場合.
+		if (value instanceof java.util.Date &&
+			!(value instanceof DateScriptable)) {
+			return new DateScriptable((Date)value);
 		// NativeObjectの場合.
 		} else if (value instanceof NativeObject) {
 			return new MapScriptable((java.util.Map)value);
@@ -99,12 +98,12 @@ public class WrapUtil {
 		// 空系の場合.
 		if(value == null || value instanceof Undefined) {
 			return value;
-		// wrapper系の場合.
-		} else if(value instanceof Wrapper) {
-			value = ((Wrapper)value).unwrap();
 		// scriptableの場合.
 		} else if(value instanceof Scriptable) {
 			return value;
+		// wrapper系の場合.
+		} else if(value instanceof Wrapper) {
+			value = ((Wrapper)value).unwrap();
 		}
 		// primitive系かmozilla系の場合.
 		c = value.getClass();
@@ -122,7 +121,7 @@ public class WrapUtil {
 			return new ListScriptable((java.util.List)value);
 		// Date系の場合.
 		} else if (value instanceof java.util.Date) {
-			return new DateScriptable((Date)value, false);
+			return new DateScriptable((Date)value);
 		}
 		// 処理が正常でない場合.
 		if(result != null) {

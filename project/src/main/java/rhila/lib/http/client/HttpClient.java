@@ -5,11 +5,18 @@ import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.Method;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.util.Map;
 
+import org.mozilla.javascript.Undefined;
+
+import rhila.RhilaException;
 import rhila.lib.ByteArrayBuffer;
 import rhila.lib.NumberUtil;
+import rhila.lib.ObjectUtil;
+import rhila.scriptable.BinaryScriptable;
 import rhila.scriptable.MapScriptable;
 
 /**
@@ -32,17 +39,49 @@ public final class HttpClient {
 
 	protected HttpClient() {
 	}
+	
+	// methodの整理.
+	private static final String trimMethod(Map<String, Object> option) {
+		String method = (String)option.get("method");
+		method = (method != null) ?
+			method.toUpperCase() : "GET";
+		option.put("method", method);
+		return method;
+	}
+	
+	// bodyを文字列変換.
+	private static final String bodyString(Object body) {
+		if(ObjectUtil.isNull(body)) {
+			return null;
+		}
+		try {
+			if(body instanceof String) {
+				return (String)body;
+			} else if(body instanceof byte[]) {
+				return new String((byte[])body, "UTF8");
+			} else if(body instanceof BinaryScriptable) {
+				return new String(((BinaryScriptable)body).getRaw(), "UTF8");
+			}
+		} catch(RhilaException re) {
+			throw re;
+		} catch(Exception e) {
+			throw new RhilaException(e);
+		}
+		throw new RhilaException(
+			"The conversion target is not binary: " + body.getClass().getName());
+	}
 
 	// MethodがGETやDELETEの場合、URLに対してFormDataを付与.
 	private static final String appendUrlParams(
-		String url, HttpClientOption option) {
-		Method method = option.getMethod();
-		if(option.isFormData() &&
-			(Method.GET == method || Method.DELETE == method)) {
+		String url, Map<String, Object> option) {
+		String method = (String)option.get("method");
+		Object body = option.get("body");
+		if(!ObjectUtil.isNull(body) &&
+			("GET".equals(method) || "DELETE".equals(method))) {
 			if(url.indexOf("?") == -1) {
-				return url + "?" + option.getFormData();
+				return url + "?" + bodyString(body);
 			} else {
-				return url + "&" + option.getFormData();
+				return url + "&" + bodyString(body);
 			}
 		}
 		return url;
@@ -65,14 +104,9 @@ public final class HttpClient {
 			(!path.startsWith("/") ? "/" : "") + path;
 	}
 
-	/**
-	 * HttpClient接続.
-	 *
-	 * @param url 対象のURLを設定します.
-	 * @param option 対象のオプションを設定します.
-	 * @return HttpResult 返却データが返されます.
-	 */
-	public static final HttpResult request(String host, String path, MapScriptable option) {
+	// HttpClient.
+	public static final HttpResult request(
+		String host, String path, Map<String, Object> option) {
 		String accessUrl;
 		HttpStatus state;
 		String location;

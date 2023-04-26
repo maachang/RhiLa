@@ -1,5 +1,6 @@
 package rhila.scriptable;
 
+import java.lang.reflect.Array;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -7,11 +8,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 
+import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.Undefined;
 
-import rhila.Json;
-import rhila.WrapUtil;
+import rhila.lib.Json;
 
 /**
  * java.util.List用Scriptable.
@@ -39,7 +40,11 @@ public class ListScriptable
 	// コンストラクタ.
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public ListScriptable(List list) {
-		this.list = list;
+		if(list instanceof ListScriptable) {
+			this.list = ((ListScriptable)list).getRaw();
+		} else {
+			this.list = list;
+		}
 	}
 	
 	// コンストラクタ.
@@ -327,5 +332,41 @@ public class ListScriptable
 	@Override
 	public List<Object> subList(int fromIndex, int toIndex) {
 		return list.subList(fromIndex, toIndex);
+	}
+	
+	// ListScriptableのオブジェクト利用.
+	public static final class ListScriptableObject extends AbstractRhinoFunction {
+		@SuppressWarnings("rawtypes")
+		@Override
+		public Scriptable newInstance(Context arg0, Scriptable arg1, Object[] arg2) {
+			if(arg2 == null || arg2.length == 0) {
+				return new ListScriptable();
+			}
+			if(arg2.length == 1) {
+				Object o = arg2[0];
+				if(o == null) {
+					return new ListScriptable();
+				} else if(o instanceof Number) {
+					return new ListScriptable(((Number)o).intValue());
+				} else if(o instanceof List) {
+					return new ListScriptable((List)o);
+				} else if(o.getClass().isArray()) {
+					final int len = Array.getLength(o);
+					final Object[] oo = new Object[len];
+					System.arraycopy(o, 0, oo, 0, len);
+					return new ListScriptable(oo);
+				}
+			}
+			return new ListScriptable(arg2);
+
+		}
+		@Override
+		public String getName() {
+			return "List";
+		}
+		@Override
+		public String toString() {
+			return "[List]";
+		}
 	}
 }

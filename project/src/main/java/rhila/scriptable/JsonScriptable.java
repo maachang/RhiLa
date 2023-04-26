@@ -3,8 +3,8 @@ package rhila.scriptable;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;
 
-import rhila.Json;
 import rhila.RhilaException;
+import rhila.lib.Json;
 
 /**
  * jsonScriptable.

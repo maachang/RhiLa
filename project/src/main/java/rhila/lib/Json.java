@@ -1,4 +1,4 @@
-package rhila;
+package rhila.lib;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
@@ -8,10 +8,10 @@ import java.util.Map;
 
 import org.mozilla.javascript.Undefined;
 
-import rhila.lib.DateUtil;
-import rhila.lib.NumberUtil;
+import rhila.RhilaException;
 import rhila.scriptable.ListScriptable;
 import rhila.scriptable.MapScriptable;
+import rhila.scriptable.WrapUtil;
 
 /**
  * Json変換処理.

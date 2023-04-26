@@ -1,4 +1,6 @@
-package rhila;
+package rhila.lib;
+
+import rhila.RhilaException;
 
 /**
  * Base64.

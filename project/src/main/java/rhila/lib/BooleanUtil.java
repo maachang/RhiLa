@@ -14,7 +14,7 @@ public class BooleanUtil {
 	 * @param n 変換対象の条件を設定します.
 	 * @return boolean [true]の場合、Booleanで解釈が可能です.
 	 */
-	public static final Boolean isBool(Object o) {
+	public static final Boolean isBoolean(Object o) {
 		if (o == null) {
 			return false;
 		} else if (o instanceof Boolean) {

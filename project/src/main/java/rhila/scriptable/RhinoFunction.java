@@ -6,7 +6,6 @@ import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.Undefined;
 
 import rhila.RhilaException;
-import rhila.WrapUtil;
 
 /**
  * 基本RhinoFunction定義.
@@ -18,7 +17,7 @@ public interface RhinoFunction extends Function {
 	@Override
 	default Object call(Context ctx, Scriptable scope, Scriptable thisObj, Object[] args) {
 		try {
-			return WrapUtil.wrap(function(ctx, scope, thisObj, WrapUtil.unwrapArgs(args)));
+			return WrapUtil.wrap(function(ctx, scope, thisObj, WrapUtil.unwrapArgs(args))); 
 		} catch(RhilaException rwe) {
 			throw rwe;
 		} catch(Throwable t) {

@@ -161,7 +161,7 @@ public class BinaryScriptable implements RhinoScriptable<byte[]> {
 
 		@Override
 		public Object function(Context ctx, Scriptable scope, Scriptable thisObj, Object[] args) {
-			return rhila.Base64.encode(binary);
+			return rhila.lib.Base64.encode(binary);
 		}
 	}
 	private ToBase64 TOBASE64 = null;

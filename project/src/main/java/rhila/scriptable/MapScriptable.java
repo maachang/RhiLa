@@ -1,21 +1,24 @@
 package rhila.scriptable;
 
+import java.lang.reflect.Array;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;
 
-import rhila.Json;
-import rhila.WrapUtil;
+import rhila.lib.Json;
 
 /**
  * java.util.Map用Scriptable.
  */
 public class MapScriptable
-	implements RhinoScriptable<Map<String, Object>>, Map<String, Object> {
+	implements RhinoScriptable<Map<String, Object>>,
+		Map<String, Object> {
 	
 	protected Scriptable parent = null;
 	protected Scriptable prototype = null;
@@ -30,7 +33,29 @@ public class MapScriptable
 	
 	// コンストラクタ.
 	public MapScriptable(Map<String, Object> map) {
-		this.map = map;
+		if(map instanceof MapScriptable) {
+			this.map = ((MapScriptable)map).getRaw();
+		} else {
+			this.map = map;
+		}
+	}
+	
+	// コンストラクタ.
+	public MapScriptable(Object[] args) {
+		Map<String, Object> m = new HashMap<String, Object>();
+		final int len = args == null ? 0 : args.length;
+		for(int i = 0; i < len; i += 2) {
+			m.put((String)args[i], args[i + 1]);
+		}
+	}
+	
+	// コンストラクタ.
+	public MapScriptable(List<Object> args) {
+		Map<String, Object> m = new HashMap<String, Object>();
+		final int len = args == null ? 0 : args.size();
+		for(int i = 0; i < len; i += 2) {
+			m.put((String)args.get(i), args.get(i + 1));
+		}
 	}
 	
 	@Override
@@ -233,5 +258,40 @@ public class MapScriptable
 	@Override
 	public Set<Entry<String, Object>> entrySet() {
 		return map.entrySet();
+	}
+	
+	// MapScriptableのオブジェクト利用.
+	public static final class MapScriptableObject extends AbstractRhinoFunction {
+		@SuppressWarnings({ "rawtypes", "unchecked" })
+		@Override
+		public Scriptable newInstance(Context arg0, Scriptable arg1, Object[] arg2) {
+			if(arg2 == null || arg2.length == 0) {
+				return new MapScriptable();
+			}
+			if(arg2.length == 1) {
+				Object o = arg2[0];
+				if(o == null) {
+					return new MapScriptable();
+				} else if(o instanceof Map) {
+					return new MapScriptable((Map)o);
+				} else if(o instanceof List) {
+					return new MapScriptable((List)o);
+				} else if(o.getClass().isArray()) {
+					final int len = Array.getLength(o);
+					final Object[] oo = new Object[len];
+					System.arraycopy(o, 0, oo, 0, len);
+					return new MapScriptable(oo);
+				}
+			}
+			return new MapScriptable(arg2);
+		}
+		@Override
+		public String getName() {
+			return "Map";
+		}
+		@Override
+		public String toString() {
+			return "[Map]";
+		}
 	}
 }
