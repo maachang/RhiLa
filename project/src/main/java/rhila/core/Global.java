@@ -115,6 +115,8 @@ public class Global extends ImporterTopLevel {
         ScriptableObject.deleteProperty(this, "global");
         ScriptableObject.deleteProperty(this, "eval");
         ScriptableObject.deleteProperty(this, "Date");
+        ScriptableObject.deleteProperty(this, "Object");
+        ScriptableObject.deleteProperty(this, "Array");
         
         // 変数定義.
         ScriptableObject.putConstProperty(this, "global", this);

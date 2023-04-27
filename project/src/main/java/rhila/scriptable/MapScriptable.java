@@ -10,16 +10,16 @@ import java.util.Set;
 
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;
+import org.mozilla.javascript.ScriptableObject;
 
 import rhila.lib.Json;
 
 /**
  * java.util.Map用Scriptable.
  */
-public class MapScriptable
-	implements RhinoScriptable<Map<String, Object>>,
-		Map<String, Object> {
-	
+public class MapScriptable extends ScriptableObject
+	implements Map<String, Object> {
+	private static final long serialVersionUID = 6662772603383861744L;
 	protected Scriptable parent = null;
 	protected Scriptable prototype = null;
 	
@@ -58,7 +58,7 @@ public class MapScriptable
 		}
 	}
 	
-	@Override
+	//@Override
 	public Map<String, Object> getRaw() {
 		return map;
 	}

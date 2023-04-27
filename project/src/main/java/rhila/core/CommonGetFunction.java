@@ -50,11 +50,13 @@ public final class CommonGetFunction implements RhinoGetFunction {
 			}
 			return BASE64;
 		case "Map":
+		case "Object":
 			if(MAP == null) {
 				MAP = new MapScriptableObject();
 			}
 			return MAP;
 		case "List":
+		case "Array":
 			if(LIST == null) {
 				LIST = new ListScriptableObject();
 			}
@@ -108,8 +110,9 @@ public final class CommonGetFunction implements RhinoGetFunction {
 			return "className";
 		}
 
+		// この内容はfunction呼び出しはしない.
 		@Override
-		public Object function(Context ctx, Scriptable scope, Scriptable thisObj, Object[] args) {
+		public Object call(Context ctx, Scriptable scope, Scriptable thisObj, Object[] args) {
 			if(args == null || args.length == 0 ||
 				args[0] == null || args[0] instanceof Undefined) {
 				return "";

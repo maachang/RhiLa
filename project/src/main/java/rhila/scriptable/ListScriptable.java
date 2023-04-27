@@ -112,6 +112,11 @@ public class ListScriptable
 	public Object get(String arg0, Scriptable arg1) {
 		if("length".equals(arg0)) {
 			return list.size();
+		} else if("add".equals(arg0)) {
+			if(ADD == null) {
+				ADD = new Add();
+			}
+			return ADD;
 		}
 		try {
 			Object ret = null;
@@ -333,6 +338,25 @@ public class ListScriptable
 	public List<Object> subList(int fromIndex, int toIndex) {
 		return list.subList(fromIndex, toIndex);
 	}
+	
+	// add function
+	private final class Add extends AbstractRhinoFunction {
+		@Override
+		public String getName() {
+			return "add";
+		}
+		
+		@Override
+		public Object function(Context ctx, Scriptable scope, Scriptable thisObj, Object[] args) {
+			final int len = (args == null) ? 0 : args.length;
+			for(int i = 0; i < len; i ++) {
+				add(RhilaWrapper.unwrap(args[i]));
+			}
+			// 実装しない場合は空返却.
+			return Undefined.instance;
+		}
+	}
+	private Add ADD = null;
 	
 	// ListScriptableのオブジェクト利用.
 	public static final class ListScriptableObject extends AbstractRhinoFunction {

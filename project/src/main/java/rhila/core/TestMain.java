@@ -6,6 +6,7 @@ import java.io.InputStreamReader;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.ContextFactory;
 import org.mozilla.javascript.Undefined;
+import org.mozilla.javascript.Version;
 
 /**
  * コマンド実行テスト用.
@@ -24,6 +25,7 @@ public class TestMain {
 		try {
 			Object out;
 			String cmd;
+			System.out.println("rhino version: " + Version.VALUE);
 			while(true) {
 				System.out.print("js> ");
 				cmd = in.readLine();
