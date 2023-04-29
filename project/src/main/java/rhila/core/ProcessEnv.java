@@ -10,7 +10,8 @@ import rhila.scriptable.MapScriptable;
  * Process.env内容.
  */
 public class ProcessEnv extends MapScriptable {
-	
+	private static final long serialVersionUID = 5742692955715437649L;
+
 	// 条件としては、実行時のenv条件のMapをセットする.
 	// これによってenv定義をプログラムで再定義できるようにする.
 	// これにより、柔軟な形でのEnvの管理ができる.

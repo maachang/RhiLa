@@ -13,6 +13,23 @@ import rhila.scriptable.RhinoGetFunction;
 public class ConvertGetFunction implements RhinoGetFunction {
 	protected ConvertGetFunction() {}
 	public static ConvertGetFunction SNGL = null;
+	private static final ArrayMap<String, Scriptable> instanceList =
+		new ArrayMap<String, Scriptable>();
+		
+	// 初期設定.
+	static {
+		instanceList.put("isNull", new IsNull());
+		instanceList.put("useString", new UseString());
+		instanceList.put("isBool", new IsBoolean());
+		instanceList.put("isBoolean", instanceList.get("isBool"));
+		instanceList.put("parseBool", new ParseBoolean());
+		instanceList.put("parseBoolean", instanceList.get("parseBool"));
+		instanceList.put("isNumber", new IsNumeric());
+		instanceList.put("isNumeric", instanceList.get("isNumber"));
+		instanceList.put("isFloat", new IsFloat());
+		instanceList.put("parseInt32", new ParseInt32());
+		instanceList.put("parseInt64", new ParseInt64());
+	};
 	
 	// オブジェクトを取得.
 	public static final ConvertGetFunction getInstance() {
@@ -25,50 +42,10 @@ public class ConvertGetFunction implements RhinoGetFunction {
     // Functionを取得.
 	@Override
 	public Scriptable getFunction(String name) {
-		switch(name) {
-		case "isNull":
-			if(ISNULL == null) {
-				ISNULL = new IsNull();
-			}
-			return ISNULL;
-		case "useString":
-			if(USESTRING == null) {
-				USESTRING = new UseString();
-			}
-			return USESTRING;
-		case "isBool":
-		case "isBoolean":
-			if(ISBOOLEAN == null) {
-				ISBOOLEAN = new IsBoolean();
-			}
-			return ISBOOLEAN;
-		case "parseBool":
-		case "parseBoolean":
-			if(PARSEBOOLEAN == null) {
-				PARSEBOOLEAN = new ParseBoolean();
-			}
-			return PARSEBOOLEAN;
-		case "isNumber":
-		case "isNumeric":
-			if(ISNUMERIC == null) {
-				ISNUMERIC = new IsNumeric();
-			}
-			return ISNUMERIC;
-		case "isFloat":
-			if(ISFLOAT == null) {
-				ISFLOAT = new IsFloat();
-			}
-			return ISFLOAT;
-		case "parseInt32":
-			if(PARSEINT32 == null) {
-				PARSEINT32 = new ParseInt32();
-			}
-			return PARSEINT32;
-		}
-		return null;
+		return instanceList.get(name);
 	}
 	
-	private final class IsNull extends AbstractRhinoFunction {
+	private static final class IsNull extends AbstractRhinoFunction {
 		protected IsNull() {}
 		@Override
 		public String getName() {
@@ -83,9 +60,8 @@ public class ConvertGetFunction implements RhinoGetFunction {
 			return ObjectUtil.isNull(args[0]);
 		}
 	}
-	private IsNull ISNULL = null;
 	
-	private final class UseString extends AbstractRhinoFunction {
+	private static final class UseString extends AbstractRhinoFunction {
 		protected UseString() {}
 		@Override
 		public String getName() {
@@ -100,9 +76,8 @@ public class ConvertGetFunction implements RhinoGetFunction {
 			return ObjectUtil.useString(args[0]);
 		}
 	}
-	private UseString USESTRING = null;
 
-	private final class IsBoolean extends AbstractRhinoFunction {
+	private static final class IsBoolean extends AbstractRhinoFunction {
 		protected IsBoolean() {}
 		@Override
 		public String getName() {
@@ -117,9 +92,8 @@ public class ConvertGetFunction implements RhinoGetFunction {
 			return BooleanUtil.isBoolean(args[0]);
 		}
 	}
-	private IsBoolean ISBOOLEAN = null;
 	
-	private final class ParseBoolean extends AbstractRhinoFunction {
+	private static final class ParseBoolean extends AbstractRhinoFunction {
 		protected ParseBoolean() {}
 		@Override
 		public String getName() {
@@ -134,9 +108,8 @@ public class ConvertGetFunction implements RhinoGetFunction {
 			return BooleanUtil.parseBoolean(args[0]);
 		}
 	}
-	private ParseBoolean PARSEBOOLEAN = null;
 	
-	private final class IsNumeric extends AbstractRhinoFunction {
+	private static final class IsNumeric extends AbstractRhinoFunction {
 		protected IsNumeric() {}
 		@Override
 		public String getName() {
@@ -151,9 +124,8 @@ public class ConvertGetFunction implements RhinoGetFunction {
 			return NumberUtil.isNumeric(args[0]);
 		}
 	}
-	private IsNumeric ISNUMERIC = null;
 	
-	private final class IsFloat extends AbstractRhinoFunction {
+	private static final class IsFloat extends AbstractRhinoFunction {
 		protected IsFloat() {}
 		@Override
 		public String getName() {
@@ -168,9 +140,8 @@ public class ConvertGetFunction implements RhinoGetFunction {
 			return NumberUtil.isFloat(args[0]);
 		}
 	}
-	private IsFloat ISFLOAT = null;
 
-	private final class ParseInt32 extends AbstractRhinoFunction {
+	private static final class ParseInt32 extends AbstractRhinoFunction {
 		protected ParseInt32() {}
 		@Override
 		public String getName() {
@@ -185,6 +156,20 @@ public class ConvertGetFunction implements RhinoGetFunction {
 			return NumberUtil.parseInt(args[0]);
 		}
 	}
-	private ParseInt32 PARSEINT32 = null;
+	
+	private static final class ParseInt64 extends AbstractRhinoFunction {
+		protected ParseInt64() {}
+		@Override
+		public String getName() {
+			return "parseInt64";
+		}
 
+		@Override
+		public Object function(Context ctx, Scriptable scope, Scriptable thisObj, Object[] args) {
+			if(args == null || args.length == 0) {
+				throw new RhilaException("Argument not set.");
+			}
+			return NumberUtil.parseLong(args[0]);
+		}
+	}
 }

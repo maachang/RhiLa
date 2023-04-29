@@ -4,12 +4,21 @@ import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;
 
 import rhila.RhilaException;
+import rhila.lib.ArrayMap;
 import rhila.lib.Json;
 
 /**
  * jsonScriptable.
  */
 public class JsonScriptable implements RhinoScriptable<Object> {
+	private static final ArrayMap<String, Scriptable> instanceList =
+		new ArrayMap<String, Scriptable>();
+	
+	// 初期設定.
+	static {
+		instanceList.put("stringify", new Stringify());
+		instanceList.put("parse", new Parse());
+	}
 	
 	@Override
 	public Object get(String arg0, Scriptable arg1) {
@@ -18,19 +27,7 @@ public class JsonScriptable implements RhinoScriptable<Object> {
 	
 	// function取得.
 	private static final Object getFunction(String name) {
-		switch(name) {
-		case "stringify":
-			if(STRINGIFY == null) {
-				STRINGIFY = new Stringify();
-			}
-			return STRINGIFY;
-		case "parse":
-			if(PARSE == null) {
-				PARSE = new Parse();
-			}
-			return PARSE;
-		}
-		return null;
+		return instanceList.get(name);
 	}
 	
 	// jsonエンコード.
@@ -49,7 +46,6 @@ public class JsonScriptable implements RhinoScriptable<Object> {
 	        return Json.encode(args[0]);
 		}
 	}
-	private static Stringify STRINGIFY = null;
 	
 	// jsonデコード.
 	private static final class Parse extends AbstractRhinoFunction {
@@ -67,5 +63,4 @@ public class JsonScriptable implements RhinoScriptable<Object> {
 	        return (Scriptable)Json.decode((String)args[0]);
 		}
 	}
-	private static Parse PARSE = null;
 }

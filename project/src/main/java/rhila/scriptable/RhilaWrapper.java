@@ -2,8 +2,6 @@ package rhila.scriptable;
 
 import java.util.Date;
 
-import org.mozilla.javascript.NativeArray;
-import org.mozilla.javascript.NativeObject;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.Undefined;
 import org.mozilla.javascript.Wrapper;
@@ -54,7 +52,7 @@ public class RhilaWrapper {
 	/**
 	 * Javaのオブジェクトとしてアンラップ.
 	 */
-	@SuppressWarnings("unchecked")
+	//@SuppressWarnings("unchecked")
 	public static final Object unwrap(Object value) {
 		// 空系の場合.
 		if(value == null || value instanceof Undefined) {
@@ -64,16 +62,20 @@ public class RhilaWrapper {
 		if(value instanceof Wrapper) {
 			value = ((Wrapper)value).unwrap();
 		}
+		
+		// NativeObjectの場合.
+		//if (value instanceof NativeObject) {
+		//	return new MapScriptable((java.util.Map)value);
+		// NativeArrayの場合.
+		//} else if (value instanceof NativeArray) {
+		//	return new ListScriptable((java.util.List)value);
+		// Dateの場合.
+		//} else if (value instanceof java.util.Date &&
+		
 		// Dateの場合.
 		if (value instanceof java.util.Date &&
 			!(value instanceof DateScriptable)) {
 			return new DateScriptable((Date)value);
-		// NativeObjectの場合.
-		} else if (value instanceof NativeObject) {
-			return new MapScriptable((java.util.Map)value);
-		// NativeArrayの場合.
-		} else if (value instanceof NativeArray) {
-			return new ListScriptable((java.util.List)value);
 		}
 		return value;
 	}
@@ -81,20 +83,8 @@ public class RhilaWrapper {
 	/**
 	 * Javaオブジェクトからrhino向けにラップ.
 	 */
-	public static final Object wrap(Object value) {
-		return wrap(null, value);
-	}
-	
-	/**
-	 * Javaオブジェクトからrhino向けにラップ.
-	 */
 	@SuppressWarnings("unchecked")
-	public static final Object wrap(boolean[] result, Object value) {
-		// 正常処理条件をセット.
-		if(result != null) {
-			result[0] = true;
-		}
-		Class c;
+	public static final Object wrap(Object value) {
 		// 空系の場合.
 		if(value == null || value instanceof Undefined) {
 			return value;
@@ -106,9 +96,9 @@ public class RhilaWrapper {
 			value = ((Wrapper)value).unwrap();
 		}
 		// primitive系かmozilla系の場合.
-		c = value.getClass();
+		Class c = value.getClass();
 		if(c.isPrimitive() ||
-			value instanceof Exception
+			value instanceof Throwable
 			|| value instanceof String || value instanceof Boolean
 			|| value instanceof Number
 			|| c.getPackage().getName().startsWith("org.mozilla.javascript")) {
@@ -122,10 +112,6 @@ public class RhilaWrapper {
 		// Date系の場合.
 		} else if (value instanceof java.util.Date) {
 			return new DateScriptable((Date)value);
-		}
-		// 処理が正常でない場合.
-		if(result != null) {
-			result[0] = false;
 		}
 		return value;
 	}

@@ -1,14 +1,13 @@
 package rhila.scriptable;
 
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.Date;
 
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;
-import org.mozilla.javascript.Undefined;
 
 import rhila.RhilaException;
+import rhila.lib.ArrayMap;
 import rhila.lib.DateUtil;
 import rhila.lib.NumberUtil;
 
@@ -22,11 +21,23 @@ public class DateScriptable extends java.util.Date
 	implements RhinoScriptable<Date>, RhinoFunction {
 	private static final long serialVersionUID = -1516184127284167794L;
 	
+	// instance可能なScriptable.
+	private static final ArrayMap<String, Scriptable> instanceList =
+		new ArrayMap<String, Scriptable>();
+		
 	// 汎用表示.
 	private static final String SYMBOL = "[Date]";
 	
 	// 元のDateオブジェクト.
 	private Date date;
+	
+	// objectインスタンスリスト.
+	private final ArrayMap<String, Object> objInsList =
+		new ArrayMap<String, Object>();
+	
+	// Date.now()用Cache.
+	private Object NOW = null;
+
 	
 	// これがtrueの場合Scriptableのコンストラクタ呼び出しではない.
 	private boolean staticScriptableFlag = false;
@@ -237,60 +248,36 @@ public class DateScriptable extends java.util.Date
 	public Object get(String arg0, Scriptable arg1) {
 		return getFunction(arg0);
 	}
-	
-	// メソッドキャッシュ.
-	private Object[] CACHE_METHODS = null;
-	
+		
 	// function取得.
 	private final Object getFunction(String name) {
 		// コンストラクタ呼び出しでない場合.
 		if(staticScriptableFlag) {
-			// Date.now()呼び出し.
 			if("now".equals(name)) {
 				if(NOW == null) {
-					NOW = new FunctionList(
-						Arrays.binarySearch(FUNCTION_NAMES, name));
+					NOW = instanceList.get(name);
 				}
 				return NOW;
 			}
-			return Undefined.instance;
+			return null;
 		}
-		// コンストラクタ呼び出しの場合.
-		int no = Arrays.binarySearch(FUNCTION_NAMES, name);
-		if(no == -1) {
-			return Undefined.instance;
+
+		// オブジェクト管理の生成Functionを取得.
+		Object ret = objInsList.get(name);
+		// 存在しない場合.
+		if(ret == null) {
+			// static管理のオブジェクトを取得.
+			ret = instanceList.get(name);
+			// 存在する場合.
+			if(ret != null) {
+				// オブジェクト管理の生成Functionとして管理.
+				ret = ((AbstractRhinoFunctionInstance)ret)
+					.getInstance(this);
+				objInsList.put(name, ret);
+			}
 		}
-		// メソッドキャッシュが存在しない場合.
-		if(CACHE_METHODS == null) {
-			// キャッシュ枠を作成.
-			CACHE_METHODS = new Object[FUNCTION_NAMES.length];
-		}
-		// メソッドキャッシュに存在しない場合.
-		if(CACHE_METHODS[no] == null) {
-			// 新しいメソッドをメソッドキャッシュに生成.
-			CACHE_METHODS[no] = new FunctionList(no);
-		}
-		return CACHE_METHODS[no];
+		return ret;
 	}
-	
-	// Date.now()用Cache.
-	private FunctionList NOW = null;
-	
-	// メソッド名群(sort済み).
-	private static final String[] FUNCTION_NAMES = new String[] {
-		"getDate","getDay",
-		"getFullYear","getHours",
-		"getMinutes","getMonth",
-		"getSeconds","getTime",
-		"getTimezoneOffset","getYear",
-		"now",
-		"setDate","setFullYear",
-		"setHours","setMinutes",
-		"setMonth","setSeconds",
-		"setTime","setYear",
-		"toGMTString","toLocaleString",
-		"toString"
-	};
 	
 	// [js]Function.
 	@Override
@@ -333,11 +320,43 @@ public class DateScriptable extends java.util.Date
 			throw new RhilaException(t);
 		}
 	}
+	
+	// メソッド名群(sort済み).
+	private static final String[] FUNCTION_NAMES = new String[] {
+		"getDate","getDay",
+		"getFullYear","getHours",
+		"getMinutes","getMonth",
+		"getSeconds","getTime",
+		"getTimezoneOffset","getYear",
+		"now",
+		"setDate","setFullYear",
+		"setHours","setMinutes",
+		"setMonth","setSeconds",
+		"setTime","setYear",
+		"toGMTString","toLocaleString",
+		"toString"
+	};
+	
+	// 初期設定.
+	static {
+		int len = FUNCTION_NAMES.length;
+		for(int i = 0; i < len; i ++) {
+			instanceList.put(FUNCTION_NAMES[i], new FunctionList(i));
+		}
+	}
 
 	// functionリストを生成.
-	private final class FunctionList extends AbstractRhinoFunction {
+	private static final class FunctionList extends AbstractRhinoFunctionInstance {
+		private DateScriptable src;
 		private int type;
 		private String typeString;
+		
+		// 新しいインスタンスを生成.
+		public final Scriptable getInstance(Object... args) {
+			FunctionList ret = new FunctionList(type);
+			ret.src = (DateScriptable)args[0];
+			return ret;
+		}
 		
 		// コンストラクタ.
 		protected FunctionList(int type) {
@@ -351,61 +370,61 @@ public class DateScriptable extends java.util.Date
 			if (args.length <= 0) {
 				switch(type) {
 				case 0: //"getDate":
-					return date.getDate();
+					return src.getDate();
 				case 1: //"getDay":
-					return date.getDay();
+					return src.getDay();
 				case 2: //"getFullYear":
-					return date.getYear() + 1900;
+					return src.getYear() + 1900;
 				case 3: //"getHours":
-					return date.getHours();
+					return src.getHours();
 				case 4: //"getMinutes":
-					return date.getMinutes();
+					return src.getMinutes();
 				case 5: //"getMonth":
-					return date.getMonth();
+					return src.getMonth();
 				case 6: //"getSeconds":
-					return date.getSeconds();
+					return src.getSeconds();
 				case 7: //"getTime":
-					return date.getTime();
+					return src.getTime();
 				case 8: //"getTimezoneOffset":
-					return date.getTimezoneOffset();
+					return src.getTimezoneOffset();
 				case 9: //"getYear":
-					return date.getYear();
+					return src.getYear();
 				case 10: //"now":
 					return System.currentTimeMillis();
 				case 19: //"toGMTString":
-					return date.toGMTString();
+					return src.toGMTString();
 				case 20: //"toLocaleString":
-					return date.toLocaleString();
+					return src.toLocaleString();
 				case 21: //"toString":
-					return DateUtil.toISO8601(date);
+					return DateUtil.toISO8601(src);
 				}
 			} else {
 				// 引数が必要な場合.
 				Object o = args[0];
 				switch (type) {
 				case 11: //"setDate":
-					date.setDate(NumberUtil.parseInt(o));
+					src.setDate(NumberUtil.parseInt(o));
 					break;
 				case 12: //"setFullYear":
-					date.setYear(NumberUtil.parseInt(o) - 1900);
+					src.setYear(NumberUtil.parseInt(o) - 1900);
 					break;
 				case 13: //"setHours":
-					date.setHours(NumberUtil.parseInt(o));
+					src.setHours(NumberUtil.parseInt(o));
 					break;
 				case 14: //"setMinutes":
-					date.setMinutes(NumberUtil.parseInt(o));
+					src.setMinutes(NumberUtil.parseInt(o));
 					break;
 				case 15: //"setMonth":
-					date.setMonth(NumberUtil.parseInt(o));
+					src.setMonth(NumberUtil.parseInt(o));
 					break;
 				case 16: //"setSeconds":
-					date.setSeconds(NumberUtil.parseInt(o));
+					src.setSeconds(NumberUtil.parseInt(o));
 					break;
 				case 17: //"setTime":
-					date.setTime(NumberUtil.parseLong(o));
+					src.setTime(NumberUtil.parseLong(o));
 					break;
 				case 18: //"setYear":
-					date.setYear(NumberUtil.parseInt(o));
+					src.setYear(NumberUtil.parseInt(o));
 					break;
 				}
 			}

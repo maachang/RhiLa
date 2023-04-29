@@ -21,7 +21,7 @@ public class TestMain {
 		BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
 		ContextFactory factory = new ContextFactory();
 		ProcessEnv processEnv = new ProcessEnv();
-		Global global = new Global(factory, processEnv);
+		Global global = Global.getInstance(factory, processEnv);
 		try {
 			Object out;
 			String cmd;

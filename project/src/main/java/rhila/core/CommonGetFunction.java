@@ -5,12 +5,14 @@ import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.Undefined;
 
 import rhila.RhilaException;
+import rhila.lib.ArrayMap;
 import rhila.scriptable.AbstractRhinoFunction;
 import rhila.scriptable.Base64Scriptable;
 import rhila.scriptable.BinaryScriptable;
 import rhila.scriptable.DateScriptable;
 import rhila.scriptable.JsonScriptable;
 import rhila.scriptable.ListScriptable.ListScriptableObject;
+import rhila.scriptable.LowerKeyMapScriptable.LowerKeyMapScriptableObject;
 import rhila.scriptable.MapScriptable.MapScriptableObject;
 import rhila.scriptable.RhinoGetFunction;
 
@@ -19,91 +21,41 @@ import rhila.scriptable.RhinoGetFunction;
  */
 public final class CommonGetFunction implements RhinoGetFunction {
 	protected CommonGetFunction() {}
-	public static CommonGetFunction SNGL = null;
+	public static final CommonGetFunction SNGL = new CommonGetFunction();
+	private static final ArrayMap<String, Scriptable> instanceList =
+		new ArrayMap<String, Scriptable>();
+	
+	// 初期設定.
+	static {
+		instanceList.put("Date", new DateScriptable());
+		instanceList.put("JSON", new JsonScriptable());
+		instanceList.put("Base64", new Base64Scriptable());
+		instanceList.put("Map", new MapScriptableObject());
+		instanceList.put("Object", instanceList.get("Map"));
+		instanceList.put("LowerKeyMap", new LowerKeyMapScriptableObject());
+		instanceList.put("LoMap", instanceList.get("LowerKeyMap"));
+		instanceList.put("List", new ListScriptableObject());
+		instanceList.put("Array", instanceList.get("List"));
+		instanceList.put("gc", new Gc());
+		instanceList.put("eval", new Eval());
+		instanceList.put("binary", new Binary());
+		instanceList.put("className", new ClassName());
+		instanceList.put("print", new Print());
+		instanceList.put("errPrint", new ErrPrint());
+	}
 	
 	// オブジェクトを取得.
 	public static final CommonGetFunction getInstance() {
-		if(SNGL == null) {
-			SNGL = new CommonGetFunction();
-		}
 		return SNGL;
 	}
-    
+	
     // Functionを取得.
 	public final Scriptable getFunction(String name) {
-		switch(name) {
-		case "Date":
-			if(DATE == null) {
-				// オブジェクト定義として生成.
-				DATE = new DateScriptable();
-				DATE.setStatic(true);
-			}
-			return DATE;			
-		case "JSON":
-			if(JSON == null) {
-				JSON = new JsonScriptable();
-			}
-			return JSON;			
-		case "Base64": 
-			if(BASE64 == null) {
-				BASE64 = new Base64Scriptable();
-			}
-			return BASE64;
-		case "Map":
-		case "Object":
-			if(MAP == null) {
-				MAP = new MapScriptableObject();
-			}
-			return MAP;
-		case "List":
-		case "Array":
-			if(LIST == null) {
-				LIST = new ListScriptableObject();
-			}
-			return LIST;
-		case "gc":
-			if(GC == null) {
-				GC = new Gc();
-			}
-			return GC;
-		case "eval":
-			if(EVAL == null) {
-				EVAL = new Eval();
-			}
-			return EVAL;
-		case "binary":
-			if(BINARY == null) {
-				BINARY = new Binary();
-			}
-			return BINARY;
-		case "className":
-			if(CLASSNAME == null) {
-				CLASSNAME = new ClassName();
-			}
-			return CLASSNAME;
-		case "print":
-			if(PRINT == null) {
-				PRINT = new Print();
-			}
-			return PRINT;
-		case "errPrint":
-			if(ERRPRINT == null) {
-				ERRPRINT = new ErrPrint();
-			}
-			return ERRPRINT;
-		}
-		return null;
+		return instanceList.get(name);
 	}
-	
-    // Global利用可能オブジェクト.
-    private JsonScriptable JSON = null;
-    private Base64Scriptable BASE64 = null;
-    private DateScriptable DATE = null;
-    private MapScriptableObject MAP = null;
-    private ListScriptableObject LIST = null;
-    
+	    	    
     // Javaクラス名を取得.
-	private final class ClassName extends AbstractRhinoFunction {
+	private static final class ClassName extends AbstractRhinoFunction {
 		protected ClassName() {}
 		@Override
 		public String getName() {
@@ -120,10 +72,9 @@ public final class CommonGetFunction implements RhinoGetFunction {
 			return args[0].getClass().getName();
 		}
 	}
-	private ClassName CLASSNAME = null;
 	
     // Print.
-	private final class Print extends AbstractRhinoFunction {
+	private static final class Print extends AbstractRhinoFunction {
 		protected Print() {}
 		@Override
 		public String getName() {
@@ -138,17 +89,17 @@ public final class CommonGetFunction implements RhinoGetFunction {
 			} else {
 				final int len = args.length;
 				for(int i = 0; i < len; i ++) {
-					System.out.println(args[i]);
+					System.out.print(args[i] + " ");
 				}
+				System.out.println();
 				
 			}
 			return Undefined.instance;
 		}
 	}
-	private Print PRINT = null;
 	
     // Print.
-	private final class ErrPrint extends AbstractRhinoFunction {
+	private static final class ErrPrint extends AbstractRhinoFunction {
 		protected ErrPrint() {}
 		@Override
 		public String getName() {
@@ -163,18 +114,16 @@ public final class CommonGetFunction implements RhinoGetFunction {
 			} else {
 				final int len = args.length;
 				for(int i = 0; i < len; i ++) {
-					System.err.println(args[i]);
+					System.err.print(args[i] + " ");
 				}
-				
+				System.err.println();
 			}
 			return Undefined.instance;
 		}
 	}
-	private ErrPrint ERRPRINT = null;
-
     
     // javaガページコレクター実行.
-	private final class Gc extends AbstractRhinoFunction {
+	private static final class Gc extends AbstractRhinoFunction {
 		protected Gc() {}
 		@Override
 		public String getName() {
@@ -187,10 +136,9 @@ public final class CommonGetFunction implements RhinoGetFunction {
 			return Undefined.instance;
 		}
 	}
-	private Gc GC = null;
 	
     // evalでスクリプト実行.
-	private final class Eval extends AbstractRhinoFunction {
+	private static final class Eval extends AbstractRhinoFunction {
 		protected Eval() {}
 		@Override
 		public String getName() {
@@ -202,10 +150,9 @@ public final class CommonGetFunction implements RhinoGetFunction {
 			return RunScript.eval((Global)thisObj, String.valueOf(args[0]));
 		}
 	}
-	private Eval EVAL = null;
 	
 	// binary生成.
-	private final class Binary extends AbstractRhinoFunction {
+	private static final class Binary extends AbstractRhinoFunction {
 		protected Binary() {}
 		@Override
 		public String getName() {
@@ -238,5 +185,4 @@ public final class CommonGetFunction implements RhinoGetFunction {
 			throw new RhilaException("Argument not valid");		
 		}
 	}
-	private Binary BINARY = null;
 }

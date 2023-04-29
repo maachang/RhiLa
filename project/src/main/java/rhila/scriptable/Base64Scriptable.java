@@ -4,12 +4,21 @@ import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;
 
 import rhila.RhilaException;
+import rhila.lib.ArrayMap;
 import rhila.lib.Base64;
 
 /**
  * base64Scriptable.
  */
 public class Base64Scriptable implements RhinoScriptable<Object> {
+	private static final ArrayMap<String, Scriptable> instanceList =
+		new ArrayMap<String, Scriptable>();
+	
+	// 初期設定.
+	static {
+		instanceList.put("encode", new Encode());
+		instanceList.put("decode", new Decode());
+	}
 	
 	@Override
 	public Object get(String arg0, Scriptable arg1) {
@@ -18,19 +27,7 @@ public class Base64Scriptable implements RhinoScriptable<Object> {
 	
 	// function取得.
 	private static final Object getFunction(String name) {
-		switch(name) {
-		case "encode":
-			if(ENCODE == null) {
-				ENCODE = new Encode();
-			}
-			return ENCODE;			
-		case "decode":
-			if(DECODE == null) {
-				DECODE = new Decode();
-			}
-			return DECODE;
-		}
-		return null;
+		return instanceList.get(name);
 	}
 		
 	// jsonエンコード.
@@ -63,7 +60,6 @@ public class Base64Scriptable implements RhinoScriptable<Object> {
     		throw new RhilaException("Encode condition argument not set.");
 		}
 	}
-	private static Encode ENCODE = null;
 	
 	// jsonデコード.
 	private static final class Decode extends AbstractRhinoFunction {
@@ -85,5 +81,4 @@ public class Base64Scriptable implements RhinoScriptable<Object> {
     		throw new RhilaException("Decode condition argument not set.");
 		}
 	}
-	private static Decode DECODE = null;
 }

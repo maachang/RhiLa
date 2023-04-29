@@ -2,13 +2,21 @@ package rhila.lib;
 
 import java.math.BigDecimal;
 
+import org.mozilla.javascript.Undefined;
+
 import rhila.RhilaException;
 
 /**
  * 数値ユーティリティ.
  */
-public class NumberUtil {
+public final class NumberUtil {
 	private NumberUtil() {}
+	
+	// hexかチェック.
+	private static final boolean isHex(String s) {
+		return (s.length() > 2 && s.charAt(0) == '0' && (s.charAt(1) == 'x'
+			|| s.charAt(1) == 'X'));
+	}
 
 	/**
 	 * 文字列内容が数値かチェック.
@@ -17,18 +25,15 @@ public class NumberUtil {
 	 * @return boolean [true]の場合、文字列内は数値が格納されています.
 	 */
 	public static final boolean isNumeric(Object num) {
-		if (num == null) {
+		if (num == null || num instanceof Undefined) {
 			return false;
 		} else if (num instanceof Number) {
 			return true;
 		} else if (!(num instanceof String)) {
 			num = num.toString().trim();
-		} else {
-			return false;
 		}
 		String s = (String) num;
-		if(s.length() > 2 && s.charAt(0) == '0' && (s.charAt(1) == 'x'
-			|| s.charAt(1) == 'X')) {
+		if(isHex(s)) {
 			// 16進数文字列の場合.
 			try {
 				Long.parseLong(s.substring(2), 16);
@@ -59,10 +64,10 @@ public class NumberUtil {
 			} else if (n instanceof String) {
 				s = (String)n;
 			} else {
-				s = n.toString();
+				s = n.toString().trim();
 			}
-			if(s.length() > 2 && s.charAt(0) == '0' && (s.charAt(1) == 'x' || s.charAt(1) == 'X')) {
-				return false;
+			if(isHex(s)) {
+				return true;
 			}
 			return s.indexOf(".") != -1;
 		}
@@ -81,7 +86,11 @@ public class NumberUtil {
 		} else if (o instanceof Number) {
 			return ((Number) o).byteValue();
 		} else if (o instanceof String) {
-			return Byte.parseByte((String) o);
+			String s = ((String)o).trim();
+			if(isHex(s)) {
+				return Byte.parseByte(s.substring(2), 16);
+			}
+			return Byte.parseByte(s);
 		} else if (o instanceof Boolean) {
 			return (byte)(((Boolean) o).booleanValue() ? 1 : 0);
 		}
@@ -100,7 +109,11 @@ public class NumberUtil {
 		} else if (o instanceof Number) {
 			return ((Number) o).shortValue();
 		} else if (o instanceof String) {
-			return Short.parseShort((String) o);
+			String s = ((String)o).trim();
+			if(isHex(s)) {
+				return Short.parseShort(s.substring(2), 16);
+			}
+			return Short.parseShort(s);
 		} else if (o instanceof Boolean) {
 			return (short)(((Boolean) o).booleanValue() ? 1 : 0);
 		}
@@ -121,7 +134,11 @@ public class NumberUtil {
 		} else if (o instanceof Number) {
 			return ((Number) o).intValue();
 		} else if (o instanceof String) {
-			return Integer.parseInt((String) o);
+			String s = ((String)o).trim();
+			if(isHex(s)) {
+				return Integer.parseInt(s.substring(2), 16);
+			}
+			return Integer.parseInt(s);
 		} else if (o instanceof Boolean) {
 			return ((Boolean) o).booleanValue() ? 1 : 0;
 		}
@@ -142,7 +159,11 @@ public class NumberUtil {
 		} else if (o instanceof Number) {
 			return ((Number) o).longValue();
 		} else if (o instanceof String) {
-			return Long.parseLong((String) o);
+			String s = ((String)o).trim();
+			if(isHex(s)) {
+				return Long.parseLong(s.substring(2), 16);
+			}
+			return Long.parseLong(s);
 		} else if (o instanceof Boolean) {
 			return ((Boolean) o).booleanValue() ? 1L : 0L;
 		}
@@ -163,7 +184,11 @@ public class NumberUtil {
 		} else if (o instanceof Number) {
 			return ((Number) o).floatValue();
 		} else if (o instanceof String && isNumeric(o)) {
-			return Float.parseFloat((String) o);
+			String s = ((String)o).trim();
+			if(isHex(s)) {
+				return (float)Integer.parseInt(s.substring(2), 16);
+			}
+			return Float.parseFloat(s);
 		} else if (o instanceof Boolean) {
 			return ((Boolean) o).booleanValue() ? 1F : 0F;
 		}
@@ -184,7 +209,11 @@ public class NumberUtil {
 		} else if (o instanceof Number) {
 			return ((Number) o).doubleValue();
 		} else if (o instanceof String) {
-			return Double.parseDouble((String) o);
+			String s = ((String)o).trim();
+			if(isHex(s)) {
+				return (double)Long.parseLong(s.substring(2), 16);
+			}
+			return Double.parseDouble(s);
 		} else if (o instanceof Boolean) {
 			return ((Boolean) o).booleanValue() ? 1D : 0D;
 		}

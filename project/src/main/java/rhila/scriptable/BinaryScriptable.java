@@ -5,13 +5,29 @@ import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.Undefined;
 
 import rhila.RhilaException;
+import rhila.lib.ArrayMap;
 
 /**
  * Binary用Scriptable.
  */
 public class BinaryScriptable implements RhinoScriptable<byte[]> {
+	// instance可能なScriptable.
+	private static final ArrayMap<String, Scriptable> instanceList =
+		new ArrayMap<String, Scriptable>();
+	
 	// 格納バイナリ.
 	private byte[] binary;
+	
+	// objectインスタンスリスト.
+	private final ArrayMap<String, Object> objInsList =
+			new ArrayMap<String, Object>();
+	
+	// 初期設定.
+	static {
+		instanceList.put("toString", new ToString());
+		instanceList.put("toBase64", new ToBase64());
+		instanceList.put("copy", new Copy());
+	}
 	
 	protected BinaryScriptable() {}
 	
@@ -111,30 +127,37 @@ public class BinaryScriptable implements RhinoScriptable<byte[]> {
 	
 	// function取得.
 	private final Object getFunction(String name) {
-		switch(name) {
-		case "length":
+		if("length".equals(name)) {
 			return binary.length;
-		case "toString":
-			if(TOSTRING == null) {
-				TOSTRING = new ToString();
-			}
-			return TOSTRING;
-		case "toBase64":
-			if(TOBASE64 == null) {
-				TOBASE64 = new ToBase64();
-			}
-			return TOBASE64;
-		case "copy":
-			if(COPY == null) {
-				COPY = new Copy();
-			}
-			return COPY;
 		}
-		return null;
+		// オブジェクト管理の生成Functionを取得.
+		Object ret = objInsList.get(name);
+		// 存在しない場合.
+		if(ret == null) {
+			// static管理のオブジェクトを取得.
+			ret = instanceList.get(name);
+			// 存在する場合.
+			if(ret != null) {
+				// オブジェクト管理の生成Functionとして管理.
+				ret = ((AbstractRhinoFunctionInstance)ret)
+					.getInstance(this);
+				objInsList.put(name, ret);
+			}
+		}
+		return ret;
 	}
 	
 	// 文字列変換処理.
-	private final class ToString extends AbstractRhinoFunction {
+	private static final class ToString extends AbstractRhinoFunctionInstance {
+		private BinaryScriptable src;
+		
+		// 新しいインスタンスを生成.
+		public final Scriptable getInstance(Object... args) {
+			ToString ret = new ToString();
+			ret.src = (BinaryScriptable)args[0];
+			return ret;
+		}
+		
 		protected ToString() {}
 		@Override
 		public String getName() {
@@ -142,17 +165,26 @@ public class BinaryScriptable implements RhinoScriptable<byte[]> {
 		}
 
 		@Override
-		public Object function(Context ctx, Scriptable scope, Scriptable thisObj, Object[] args) {
+		public Object function(
+			Context ctx, Scriptable scope, Scriptable thisObj, Object[] args) {
 			if(args == null || args.length == 0) {
-				return convertString();
+				return src.convertString();
 			}
-			return convertString(String.valueOf(args[1]));
+			return src.convertString(String.valueOf(args[1]));
 		}
 	}
-	private ToString TOSTRING = null;
 	
 	// base64変換.
-	private final class ToBase64 extends AbstractRhinoFunction {
+	private static final class ToBase64 extends AbstractRhinoFunctionInstance {
+		BinaryScriptable src;
+		
+		// 新しいインスタンスを生成.
+		public final Scriptable getInstance(Object... args) {
+			ToBase64 ret = new ToBase64();
+			ret.src = (BinaryScriptable)args[0];
+			return ret;
+		}
+		
 		protected ToBase64() {}
 		@Override
 		public String getName() {
@@ -160,14 +192,23 @@ public class BinaryScriptable implements RhinoScriptable<byte[]> {
 		}
 
 		@Override
-		public Object function(Context ctx, Scriptable scope, Scriptable thisObj, Object[] args) {
-			return rhila.lib.Base64.encode(binary);
+		public Object function(
+			Context ctx, Scriptable scope, Scriptable thisObj, Object[] args) {
+			return rhila.lib.Base64.encode(src.getRaw());
 		}
 	}
-	private ToBase64 TOBASE64 = null;
 	
 	// copy.
-	private final class Copy extends AbstractRhinoFunction {
+	private static final class Copy extends AbstractRhinoFunctionInstance {
+		BinaryScriptable src;
+		
+		// 新しいインスタンスを生成.
+		public final Scriptable getInstance(Object... args) {
+			Copy ret = new Copy();
+			ret.src = (BinaryScriptable)args[0];
+			return ret;
+		}
+		
 		protected Copy() {}
 		@Override
 		public String getName() {
@@ -175,7 +216,8 @@ public class BinaryScriptable implements RhinoScriptable<byte[]> {
 		}
 
 		@Override
-		public Object function(Context ctx, Scriptable scope, Scriptable thisObj, Object[] args) {
+		public Object function(
+			Context ctx, Scriptable scope, Scriptable thisObj, Object[] args) {
 			// 引数(destBin, srcPos, destPos, len).
 			// 戻り値: 実際にコピーされた長さ.
 			if(args.length < 1 || !(args[0] instanceof BinaryScriptable)) {
@@ -183,6 +225,7 @@ public class BinaryScriptable implements RhinoScriptable<byte[]> {
 			}
 			int len = -1;
 			try {
+				byte[] srcBin = src.getRaw();
 				byte[] bin = ((BinaryScriptable)args[0]).getRaw();
 				len = bin.length;
 				int srcPos = 0, destPos = 0;
@@ -202,19 +245,18 @@ public class BinaryScriptable implements RhinoScriptable<byte[]> {
 					}
 				}
 				// コピー元の条件がコピー元のバイナリ容量を超えてる場合.
-				if(srcPos + len > binary.length) {
-					len = binary.length - srcPos;
+				if(srcPos + len > srcBin.length) {
+					len = srcBin.length - srcPos;
 					// コピー対象が存在しない.
 					if(len <= 0) {
 						return -1;
 					}
 				}
-				System.arraycopy(binary, srcPos, bin, destPos, len);
+				System.arraycopy(srcBin, srcPos, bin, destPos, len);
 			} catch(Exception e) {
 				return -1;
 			}
 			return len;
 		}
 	}
-	private Copy COPY = null;
 }

@@ -12,6 +12,7 @@ import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.Undefined;
 
+import rhila.lib.ArrayMap;
 import rhila.lib.Json;
 
 /**
@@ -20,9 +21,21 @@ import rhila.lib.Json;
 public class ListScriptable
 	extends AbstractList<Object> 
 	implements RhinoScriptable<List<Object>> {
+	// instance可能なScriptable.
+	private static final ArrayMap<String, Scriptable> instanceList =
+		new ArrayMap<String, Scriptable>();
+	
+	// 初期設定.
+	static {
+		instanceList.put("add", new Add());
+	}
 	
 	protected Scriptable parent = null;
 	protected Scriptable prototype = null;
+	
+	// objectインスタンスリスト.
+	private final ArrayMap<String, Object> objInsList =
+		new ArrayMap<String, Object>();
 	
 	// listオブジェクト.
 	private List<Object> list = null;
@@ -110,16 +123,11 @@ public class ListScriptable
 
 	@Override
 	public Object get(String arg0, Scriptable arg1) {
-		if("length".equals(arg0)) {
-			return list.size();
-		} else if("add".equals(arg0)) {
-			if(ADD == null) {
-				ADD = new Add();
-			}
-			return ADD;
+		Object ret = getFunction(arg0);
+		if(ret != null) {
+			return ret;
 		}
 		try {
-			Object ret = null;
 			if(list instanceof Scriptable) {
 				Scriptable s = (Scriptable)list;
 				ret = s.get(arg0, s);
@@ -339,8 +347,40 @@ public class ListScriptable
 		return list.subList(fromIndex, toIndex);
 	}
 	
+	// function取得.
+	private final Object getFunction(String name) {
+		if("length".equals(name)) {
+			return list.size();
+		}
+		// オブジェクト管理の生成Functionを取得.
+		Object ret = objInsList.get(name);
+		// 存在しない場合.
+		if(ret == null) {
+			// static管理のオブジェクトを取得.
+			ret = instanceList.get(name);
+			// 存在する場合.
+			if(ret != null) {
+				// オブジェクト管理の生成Functionとして管理.
+				ret = ((AbstractRhinoFunctionInstance)ret)
+					.getInstance(this);
+				objInsList.put(name, ret);
+			}
+		}
+		return ret;
+	}
+
+	
 	// add function
-	private final class Add extends AbstractRhinoFunction {
+	private static final class Add extends AbstractRhinoFunctionInstance {
+		private ListScriptable src;
+		
+		@Override
+		public Scriptable getInstance(Object... args) {
+			Add ret = new Add();
+			ret.src = (ListScriptable)args[0];
+			return ret;
+		}
+		
 		@Override
 		public String getName() {
 			return "add";
@@ -350,13 +390,12 @@ public class ListScriptable
 		public Object function(Context ctx, Scriptable scope, Scriptable thisObj, Object[] args) {
 			final int len = (args == null) ? 0 : args.length;
 			for(int i = 0; i < len; i ++) {
-				add(RhilaWrapper.unwrap(args[i]));
+				src.add(RhilaWrapper.unwrap(args[i]));
 			}
 			// 実装しない場合は空返却.
 			return Undefined.instance;
 		}
 	}
-	private Add ADD = null;
 	
 	// ListScriptableのオブジェクト利用.
 	public static final class ListScriptableObject extends AbstractRhinoFunction {

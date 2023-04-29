@@ -8,8 +8,8 @@ import org.mozilla.javascript.ScriptableObject;
 
 import rhila.RhilaException;
 import rhila.lib.ConvertGetFunction;
-import rhila.scriptable.RhinoGetFunction;
 import rhila.scriptable.RhilaWrapper;
+import rhila.scriptable.RhinoGetFunction;
 
 /**
  * globalオブジェクト.
@@ -34,12 +34,22 @@ public class Global extends ImporterTopLevel {
     // env定義.
     private ProcessEnv env;
     
-    @SuppressWarnings("unused")
-    private Global() {}
+    // シングルトン.
+    private static final Global SNGL = new Global();
     
-    // コンストラクタ.
-    public Global(ContextFactory factory, ProcessEnv env) {
-        this.initContextFactory(factory, env);
+    // 新しいオブジェクトを取得.
+    public static final Global getInstance(
+    	ContextFactory factory, ProcessEnv env) {
+    	Global ret = SNGL.newInstance();
+        ret.initContextFactory(factory, env);
+        return ret;
+    }
+    
+    protected Global() {}
+    
+    // 新しいオブジェクトを生成する.
+    private final Global newInstance() {
+    	return new Global();
     }
     
     // 初期化完了チェック.

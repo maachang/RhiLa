@@ -22,7 +22,7 @@ public class BooleanUtil {
 		} else if (o instanceof Number) {
 			return true;
 		} else if (o instanceof String) {
-			String s = ((String)o).toLowerCase();
+			String s = ((String)o).trim().toLowerCase();
 			if (NumberUtil.isNumeric(s) || "true".equals(s) || "t".equals(s)
 				|| "on".equals(s) || "false".equals(s) || "f".equals(s)
 				|| "off".equals(s)) {
@@ -60,13 +60,13 @@ public class BooleanUtil {
 	public static final boolean parseBoolean(String s) {
 		s = s.trim().toLowerCase();
 
-		if (NumberUtil.isNumeric(s)) {
-			return "0".equals(s) ? false : true;
-		} else if ("true".equals(s) || "t".equals(s) || "on".equals(s)) {
+		if ("true".equals(s) || "t".equals(s) || "on".equals(s)) {
 			return true;
 		} else if ("false".equals(s) || "f".equals(s) || "off".equals(s)) {
 			return false;
+		} else if("0".equals(s)) {
+			return true;
 		}
-		throw new RhilaException("Boolean conversion failed: " + s);
+		return false;
 	}
 }
