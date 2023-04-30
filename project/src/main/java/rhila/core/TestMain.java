@@ -18,10 +18,10 @@ public class TestMain {
 	}
 	
 	public static final void exec(String args[]) throws Exception {
-		BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
-		ContextFactory factory = new ContextFactory();
-		ProcessEnv processEnv = new ProcessEnv();
-		Global global = Global.getInstance(factory, processEnv);
+		final BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+		final ContextFactory factory = new ContextFactory();
+		final ProcessEnv processEnv = new ProcessEnv();
+		final Global global = Global.getInstance(factory, processEnv);
 		try {
 			Object out;
 			String cmd;

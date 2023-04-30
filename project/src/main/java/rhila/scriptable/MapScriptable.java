@@ -20,6 +20,10 @@ import rhila.lib.Json;
 public class MapScriptable extends ScriptableObject
 	implements Map<String, Object> {
 	private static final long serialVersionUID = 6662772603383861744L;
+	
+    // lambda snapStart CRaC用.
+    protected static final MapScriptable LOAD_CRAC = new MapScriptable();
+	
 	protected Scriptable parent = null;
 	protected Scriptable prototype = null;
 	
@@ -262,6 +266,9 @@ public class MapScriptable extends ScriptableObject
 	
 	// MapScriptableのオブジェクト利用.
 	public static final class MapScriptableObject extends AbstractRhinoFunction {
+	    // lambda snapStart CRaC用.
+	    protected static final MapScriptableObject LOAD_CRAC = new MapScriptableObject();
+	    
 		@SuppressWarnings({ "rawtypes", "unchecked" })
 		@Override
 		public Scriptable newInstance(Context arg0, Scriptable arg1, Object[] arg2) {

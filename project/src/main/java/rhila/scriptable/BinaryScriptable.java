@@ -11,22 +11,26 @@ import rhila.lib.ArrayMap;
  * Binary用Scriptable.
  */
 public class BinaryScriptable implements RhinoScriptable<byte[]> {
+    // lambda snapStart CRaC用.
+    protected static final BinaryScriptable LOAD_CRAC = new BinaryScriptable();
+	
 	// instance可能なScriptable.
-	private static final ArrayMap<String, Scriptable> instanceList =
-		new ArrayMap<String, Scriptable>();
+	private static final ArrayMap<String, Scriptable> instanceList;
 	
 	// 格納バイナリ.
 	private byte[] binary;
 	
 	// objectインスタンスリスト.
 	private final ArrayMap<String, Object> objInsList =
-			new ArrayMap<String, Object>();
+		new ArrayMap<String, Object>();
 	
 	// 初期設定.
 	static {
-		instanceList.put("toString", new ToString());
-		instanceList.put("toBase64", new ToBase64());
-		instanceList.put("copy", new Copy());
+		instanceList = new ArrayMap<String, Scriptable>(
+			"toString", ToString.LOAD_CRAC
+			,"toBase64", ToBase64.LOAD_CRAC
+			,"copy", Copy.LOAD_CRAC
+		);
 	}
 	
 	protected BinaryScriptable() {}
@@ -149,6 +153,8 @@ public class BinaryScriptable implements RhinoScriptable<byte[]> {
 	
 	// 文字列変換処理.
 	private static final class ToString extends AbstractRhinoFunctionInstance {
+	    // lambda snapStart CRaC用.
+	    protected static final ToString LOAD_CRAC = new ToString();
 		private BinaryScriptable src;
 		
 		// 新しいインスタンスを生成.
@@ -176,6 +182,8 @@ public class BinaryScriptable implements RhinoScriptable<byte[]> {
 	
 	// base64変換.
 	private static final class ToBase64 extends AbstractRhinoFunctionInstance {
+	    // lambda snapStart CRaC用.
+	    protected static final ToBase64 LOAD_CRAC = new ToBase64();
 		BinaryScriptable src;
 		
 		// 新しいインスタンスを生成.
@@ -200,6 +208,8 @@ public class BinaryScriptable implements RhinoScriptable<byte[]> {
 	
 	// copy.
 	private static final class Copy extends AbstractRhinoFunctionInstance {
+	    // lambda snapStart CRaC用.
+	    protected static final Copy LOAD_CRAC = new Copy();
 		BinaryScriptable src;
 		
 		// 新しいインスタンスを生成.
@@ -259,4 +269,48 @@ public class BinaryScriptable implements RhinoScriptable<byte[]> {
 			return len;
 		}
 	}
+	
+	// BinaryScriptableのオブジェクト利用.
+	public static final class BinaryScriptableObject
+		extends AbstractRhinoFunction {
+	    // lambda snapStart CRaC用.
+	    protected static final BinaryScriptableObject LOAD_CRAC =
+	    	new BinaryScriptableObject();
+	    
+		@Override
+		public Scriptable newInstance(
+			Context arg0, Scriptable arg1, Object[] arg2) {
+			if(arg2 == null || arg2.length == 0) {
+				throw new RhilaException("Argument not valid");
+			}
+			// バイナリ生成オプション群.
+			int len = arg2.length;
+			if(len == 1) {
+				Object o = arg2[0];
+				if(o instanceof byte[]) {
+					return new BinaryScriptable((byte[])o);
+				} else if(o instanceof BinaryScriptable) {
+					return new BinaryScriptable((BinaryScriptable)o);
+				} else if(o instanceof Number) {
+					return new BinaryScriptable(((Number)o).intValue());
+				} else if(o instanceof String) {
+					return new BinaryScriptable((String)o);
+				}
+			} else if(len == 2) {
+				if(arg2[0] instanceof String && arg2[1] instanceof String) {
+					return new BinaryScriptable((String)arg2[0], (String)arg2[1]);
+				}
+			}
+			throw new RhilaException("Argument not valid");		
+		}
+		@Override
+		public String getName() {
+			return "Binary";
+		}
+		@Override
+		public String toString() {
+			return "[Binary]";
+		}
+	}
+
 }

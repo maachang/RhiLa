@@ -10,14 +10,18 @@ import rhila.lib.Base64;
 /**
  * base64Scriptable.
  */
-public class Base64Scriptable implements RhinoScriptable<Object> {
-	private static final ArrayMap<String, Scriptable> instanceList =
-		new ArrayMap<String, Scriptable>();
+public class Base64ScriptableObject implements RhinoScriptable<Object> {
+    // lambda snapStart CRaC用.
+    protected static final Base64ScriptableObject LOAD_CRAC = new Base64ScriptableObject();
+	
+	private static final ArrayMap<String, Scriptable> instanceList;
 	
 	// 初期設定.
 	static {
-		instanceList.put("encode", new Encode());
-		instanceList.put("decode", new Decode());
+		instanceList = new ArrayMap<String, Scriptable>(
+			"encode", Encode.LOAD_CRAC
+			,"decode", Decode.LOAD_CRAC
+		);
 	}
 	
 	@Override
@@ -32,6 +36,9 @@ public class Base64Scriptable implements RhinoScriptable<Object> {
 		
 	// jsonエンコード.
 	private static final class Encode extends AbstractRhinoFunction {
+	    // lambda snapStart CRaC用.
+	    protected static final Encode LOAD_CRAC = new Encode();
+	    // コンストラクタ.
 		protected Encode() {}
 		@Override
 		public String getName() {
@@ -63,6 +70,9 @@ public class Base64Scriptable implements RhinoScriptable<Object> {
 	
 	// jsonデコード.
 	private static final class Decode extends AbstractRhinoFunction {
+	    // lambda snapStart CRaC用.
+	    protected static final Decode LOAD_CRAC = new Decode();
+	    // コンストラクタ.
 		protected Decode() {}
 		@Override
 		public String getName() {

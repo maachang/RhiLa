@@ -16,6 +16,9 @@ import org.mozilla.javascript.Undefined;
 public class LowerKeyMapScriptable extends MapScriptable {
 	private static final long serialVersionUID = -3484541618105346510L;
 	
+    // lambda snapStart CRaC用.
+    protected static final LowerKeyMapScriptable LOAD_CRAC = new LowerKeyMapScriptable();
+	
 	// コンストラクタ.
 	public LowerKeyMapScriptable() {
 		this.map = new HashMap<String, Object>();
@@ -96,10 +99,16 @@ public class LowerKeyMapScriptable extends MapScriptable {
 	}
 	
 	// LowerKeyMapScriptableのオブジェクト利用.
-	public static final class LowerKeyMapScriptableObject extends AbstractRhinoFunction {
+	public static final class LowerKeyMapScriptableObject
+		extends AbstractRhinoFunction {
+	    // lambda snapStart CRaC用.
+	    protected static final LowerKeyMapScriptableObject LOAD_CRAC =
+	    	new LowerKeyMapScriptableObject();
+		
 		@SuppressWarnings({ "rawtypes", "unchecked" })
 		@Override
-		public Scriptable newInstance(Context arg0, Scriptable arg1, Object[] arg2) {
+		public Scriptable newInstance(
+			Context arg0, Scriptable arg1, Object[] arg2) {
 			if(arg2 == null || arg2.length == 0) {
 				return new LowerKeyMapScriptable();
 			}

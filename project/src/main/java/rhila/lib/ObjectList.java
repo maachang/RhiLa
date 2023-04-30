@@ -3,8 +3,11 @@ package rhila.lib;
 /**
  * オブジェクトリスト.
  */
-@SuppressWarnings({"unchecked"})
+@SuppressWarnings({"unchecked", "rawtypes"})
 public final class ObjectList<T> {
+    // lambda snapStart CRaC用.
+	protected static final ObjectList LOAD_CRAC = new ObjectList();
+	
 	private static final int DEF = 8;
 	protected Object[] list;
 	protected int length;

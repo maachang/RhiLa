@@ -1,5 +1,7 @@
 package rhila.core;
 
+import org.mozilla.javascript.Context;
+import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.WrappedException;
 
 import rhila.RhilaException;
@@ -13,22 +15,22 @@ public final class RunScript {
 	protected RunScript() {}
 	
 	// スクリプト実行.
-	public static final Object eval(Global global, String script) {
-		return eval(global, script, "eval", 1);
+	public static final Object eval(Scriptable scope, String script) {
+		return eval(scope, script, "eval", 1);
 	}
 	
 	// スクリプト実行.
 	public static final Object eval(
-		Global global, String script, String scriptName) {
-		return eval(global, script, scriptName, 1);
+			Scriptable scope, String script, String scriptName) {
+		return eval(scope, script, scriptName, 1);
 	}
 	
 	// スクリプト実行.
 	public static final Object eval(
-		Global global, String script, String scriptName, int lineNo) {
+		Scriptable scope, String script, String scriptName, int lineNo) {
 		try {
-			return global.getContext().evaluateString(
-				global, script, scriptName, lineNo, null);
+			return Context.getCurrentContext().evaluateString(
+				scope, script, scriptName, lineNo, null);
 		} catch(WrappedException we) {
 			Throwable t = we.getWrappedException();
 			if(t instanceof RhilaException) {
@@ -60,9 +62,9 @@ public final class RunScript {
 	// return exports;
 	// })();
 	//
-	public static final Object loadLibrary(Global global, String script, String scriptName) {
+	public static final Object loadLibrary(Scriptable scope, String script, String scriptName) {
 		return eval(
-			global
+			scope
 			,new StringBuilder(LIB_HEADER)
 				.append(script)
 				.append(LIB_FOODER)

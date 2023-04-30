@@ -26,7 +26,8 @@ public class DateUtil {
 	private DateUtil() {}
 
 	/** グリニッジ標準時タイムゾーン. **/
-	protected static final TimeZone GMT_TIMEZONE = TimeZone.getTimeZone("Europe/London");
+	protected static final TimeZone GMT_TIMEZONE =
+		TimeZone.getTimeZone("Europe/London");
 
 	/** HTTPタイムスタンプ条件を生成. **/
 	private static final String[] _TIMESTAMP_TO_WEEK;

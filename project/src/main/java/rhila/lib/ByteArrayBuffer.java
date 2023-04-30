@@ -199,9 +199,22 @@ public class ByteArrayBuffer {
 			return value[readPosition + pos] == b;
 		}
 	};
+	
+    // lambda snapStart CRaC用.
+    protected static final ByteArrayBuffer LOAD_CRAC = new ByteArrayBuffer();
+    
+    // 新しいオブジェクトを取得.
+    public static final ByteArrayBuffer getInstance() {
+    	return LOAD_CRAC.newInstance();
+    }
+    
+    // 新しいオブジェクトを取得.
+    public static final ByteArrayBuffer getInstance(int bufSize) {
+    	return LOAD_CRAC.newInstance(bufSize);
+    }
 
 	// Entry.valueのバッファ長.
-	private final int entryValueLength;
+	private int entryValueLength;
 
 	// ラストEntry.
 	private Entry lastEntry;
@@ -214,27 +227,35 @@ public class ByteArrayBuffer {
 	
 	// クローズフラグ.
 	private boolean closeFlag;
-
-	/**
-	 * コンストラクタ.
-	 */
-	public ByteArrayBuffer() {
-		this(DEF_LENGTH);
-	}
 	
 	/**
 	 * コンストラクタ.
+	 */
+	protected ByteArrayBuffer() {
+	}
+
+	/**
+	 * オブジェクトを作成.
+	 */
+	public final ByteArrayBuffer newInstance() {
+		return newInstance(DEF_LENGTH);
+	}
+	
+	/**
+	 * オブジェクトを作成.
 	 * @param size 対象の１データのバッファ長を設定します.
 	 */
-	public ByteArrayBuffer(int size) {
-		if (size <= MIN_LENGTH) {
-			size = MIN_LENGTH;
+	public final ByteArrayBuffer newInstance(int bufSize) {
+		if (bufSize <= MIN_LENGTH) {
+			bufSize = MIN_LENGTH;
 		}
-		entryValueLength = size;
-		lastEntry = null;
-		firstEntry = null;
-		allLength = 0;
-		closeFlag = false;
+		ByteArrayBuffer ret = new ByteArrayBuffer();
+		ret.entryValueLength = bufSize;
+		ret.lastEntry = null;
+		ret.firstEntry = null;
+		ret.allLength = 0;
+		ret.closeFlag = false;
+		return ret;
 	}
 	
 	

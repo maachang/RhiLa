@@ -21,9 +21,40 @@ public class DateScriptable extends java.util.Date
 	implements RhinoScriptable<Date>, RhinoFunction {
 	private static final long serialVersionUID = -1516184127284167794L;
 	
+    // lambda snapStart CRaC用.
+    protected static final DateScriptable LOAD_CRAC = new DateScriptable();
+	
 	// instance可能なScriptable.
-	private static final ArrayMap<String, Scriptable> instanceList =
-		new ArrayMap<String, Scriptable>();
+	private static final ArrayMap<String, Scriptable> instanceList;
+	
+	// メソッド名群(sort済み).
+	private static final String[] FUNCTION_NAMES = new String[] {
+		"getDate","getDay",
+		"getFullYear","getHours",
+		"getMinutes","getMonth",
+		"getSeconds","getTime",
+		"getTimezoneOffset","getYear",
+		"nano",
+		"now",
+		"setDate","setFullYear",
+		"setHours","setMinutes",
+		"setMonth","setSeconds",
+		"setTime","setYear",
+		"toGMTString","toLocaleString",
+		"toString"
+	};
+	
+	// 初期設定.
+	static {
+		// 配列で直接追加.
+		final int len = FUNCTION_NAMES.length * 2;
+		Object[] list = new Object[len];
+		for(int i = 0, j = 0; i < len; i += 2, j ++) {
+			list[i] = FUNCTION_NAMES[j];
+			list[i + 1] = new FunctionList(j);
+		}
+		instanceList = new ArrayMap<String, Scriptable>(list);
+	}
 		
 	// 汎用表示.
 	private static final String SYMBOL = "[Date]";
@@ -37,10 +68,12 @@ public class DateScriptable extends java.util.Date
 	
 	// Date.now()用Cache.
 	private Object NOW = null;
+	// Date.nano()用Cache.
+	private Object NANO = null;
 
 	
 	// これがtrueの場合Scriptableのコンストラクタ呼び出しではない.
-	private boolean staticScriptableFlag = false;
+	private boolean staticFlag = true;
 	
 	// コンストラクタ.
 	public DateScriptable() {
@@ -110,17 +143,6 @@ public class DateScriptable extends java.util.Date
 	@Override
 	public String toString() {
 		return SYMBOL;
-	}
-	
-	// static定義を取得.
-	public boolean isStatic() {
-		return staticScriptableFlag;
-	}
-	
-	// static定義を設定.
-	public DateScriptable setStatic(boolean staticFlag) {
-		staticScriptableFlag = staticFlag;
-		return this;
 	}
 	
 	//////////////////////
@@ -252,12 +274,17 @@ public class DateScriptable extends java.util.Date
 	// function取得.
 	private final Object getFunction(String name) {
 		// コンストラクタ呼び出しでない場合.
-		if(staticScriptableFlag) {
+		if(staticFlag) {
 			if("now".equals(name)) {
 				if(NOW == null) {
 					NOW = instanceList.get(name);
 				}
 				return NOW;
+			} else if("nano".equals(name)) {
+				if(NANO == null) {
+					NANO = instanceList.get(name);
+				}
+				return NANO;
 			}
 			return null;
 		}
@@ -313,6 +340,7 @@ public class DateScriptable extends java.util.Date
 			if(ret == null) {
 				ret = new DateScriptable(arg2);
 			}
+			ret.staticFlag = false;
 			return ret;
 		} catch(RhilaException rwe) {
 			throw rwe;
@@ -321,32 +349,12 @@ public class DateScriptable extends java.util.Date
 		}
 	}
 	
-	// メソッド名群(sort済み).
-	private static final String[] FUNCTION_NAMES = new String[] {
-		"getDate","getDay",
-		"getFullYear","getHours",
-		"getMinutes","getMonth",
-		"getSeconds","getTime",
-		"getTimezoneOffset","getYear",
-		"now",
-		"setDate","setFullYear",
-		"setHours","setMinutes",
-		"setMonth","setSeconds",
-		"setTime","setYear",
-		"toGMTString","toLocaleString",
-		"toString"
-	};
-	
-	// 初期設定.
-	static {
-		int len = FUNCTION_NAMES.length;
-		for(int i = 0; i < len; i ++) {
-			instanceList.put(FUNCTION_NAMES[i], new FunctionList(i));
-		}
-	}
-
 	// functionリストを生成.
 	private static final class FunctionList extends AbstractRhinoFunctionInstance {
+	    // lambda snapStart CRaC用.
+	    @SuppressWarnings("unused")
+		protected static final FunctionList LOAD_CRAC = new FunctionList();
+	    
 		private DateScriptable src;
 		private int type;
 		private String typeString;
@@ -357,6 +365,8 @@ public class DateScriptable extends java.util.Date
 			ret.src = (DateScriptable)args[0];
 			return ret;
 		}
+		
+		protected FunctionList() {}
 		
 		// コンストラクタ.
 		protected FunctionList(int type) {
@@ -389,41 +399,43 @@ public class DateScriptable extends java.util.Date
 					return src.getTimezoneOffset();
 				case 9: //"getYear":
 					return src.getYear();
-				case 10: //"now":
+				case 10: //"nano":
+					return System.nanoTime();
+				case 11: //"now":
 					return System.currentTimeMillis();
-				case 19: //"toGMTString":
+				case 20: //"toGMTString":
 					return src.toGMTString();
-				case 20: //"toLocaleString":
+				case 21: //"toLocaleString":
 					return src.toLocaleString();
-				case 21: //"toString":
+				case 22: //"toString":
 					return DateUtil.toISO8601(src);
 				}
 			} else {
 				// 引数が必要な場合.
 				Object o = args[0];
 				switch (type) {
-				case 11: //"setDate":
+				case 12: //"setDate":
 					src.setDate(NumberUtil.parseInt(o));
 					break;
-				case 12: //"setFullYear":
+				case 13: //"setFullYear":
 					src.setYear(NumberUtil.parseInt(o) - 1900);
 					break;
-				case 13: //"setHours":
+				case 14: //"setHours":
 					src.setHours(NumberUtil.parseInt(o));
 					break;
-				case 14: //"setMinutes":
+				case 15: //"setMinutes":
 					src.setMinutes(NumberUtil.parseInt(o));
 					break;
-				case 15: //"setMonth":
+				case 16: //"setMonth":
 					src.setMonth(NumberUtil.parseInt(o));
 					break;
-				case 16: //"setSeconds":
+				case 17: //"setSeconds":
 					src.setSeconds(NumberUtil.parseInt(o));
 					break;
-				case 17: //"setTime":
+				case 18: //"setTime":
 					src.setTime(NumberUtil.parseLong(o));
 					break;
-				case 18: //"setYear":
+				case 19: //"setYear":
 					src.setYear(NumberUtil.parseInt(o));
 					break;
 				}

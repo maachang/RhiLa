@@ -11,6 +11,9 @@ import rhila.scriptable.MapScriptable;
  */
 public class ProcessEnv extends MapScriptable {
 	private static final long serialVersionUID = 5742692955715437649L;
+	
+    // lambda snapStart CRaC用.
+    protected static final ProcessEnv LOAD_CRAC = new ProcessEnv();
 
 	// 条件としては、実行時のenv条件のMapをセットする.
 	// これによってenv定義をプログラムで再定義できるようにする.

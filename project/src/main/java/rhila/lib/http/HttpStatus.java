@@ -12,10 +12,12 @@ import rhila.scriptable.AbstractRhinoFunctionInstance;
 
 // HTTPステータス.
 public class HttpStatus {
+    // lambda snapStart CRaC用.
+    protected static final HttpStatus LOAD_CRAC = new HttpStatus();
 	// instance可能なScriptable.
 	private static final ArrayMap<String, Scriptable> instanceList =
 		new ArrayMap<String, Scriptable>();
-	// HTTPステータスメッセージ解決.
+	// HTTPステータスメッセージ.
 	private static final ArrayMap<Integer, String> STATUS;
 	
 	// HttpStatusScriptableメソッド.
@@ -79,7 +81,8 @@ public class HttpStatus {
 		STATUS = map;
 		final int len = FUNCTION_NAMES.length;
 		for(int i = 0; i < len; i ++) {
-			instanceList.put(FUNCTION_NAMES[i], new HttpStatusFunctions(i));
+			instanceList.put(FUNCTION_NAMES[i],
+				new HttpStatusFunctions(i));
 		}
 	}
 	

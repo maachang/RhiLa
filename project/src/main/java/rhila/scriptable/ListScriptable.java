@@ -21,13 +21,17 @@ import rhila.lib.Json;
 public class ListScriptable
 	extends AbstractList<Object> 
 	implements RhinoScriptable<List<Object>> {
+	
+    // lambda snapStart CRaC用.
+    protected static final ListScriptable LOAD_CRAC = new ListScriptable();
+	
 	// instance可能なScriptable.
 	private static final ArrayMap<String, Scriptable> instanceList =
 		new ArrayMap<String, Scriptable>();
 	
 	// 初期設定.
 	static {
-		instanceList.put("add", new Add());
+		instanceList.put("add", Add.LOAD_CRAC);
 	}
 	
 	protected Scriptable parent = null;
@@ -369,9 +373,11 @@ public class ListScriptable
 		return ret;
 	}
 
-	
 	// add function
 	private static final class Add extends AbstractRhinoFunctionInstance {
+	    // lambda snapStart CRaC用.
+	    protected static final Add LOAD_CRAC = new Add();
+	    
 		private ListScriptable src;
 		
 		@Override
@@ -398,10 +404,16 @@ public class ListScriptable
 	}
 	
 	// ListScriptableのオブジェクト利用.
-	public static final class ListScriptableObject extends AbstractRhinoFunction {
+	public static final class ListScriptableObject
+		extends AbstractRhinoFunction {
+	    // lambda snapStart CRaC用.
+	    protected static final ListScriptableObject LOAD_CRAC =
+	    	new ListScriptableObject();
+		
 		@SuppressWarnings("rawtypes")
 		@Override
-		public Scriptable newInstance(Context arg0, Scriptable arg1, Object[] arg2) {
+		public Scriptable newInstance(
+			Context arg0, Scriptable arg1, Object[] arg2) {
 			if(arg2 == null || arg2.length == 0) {
 				return new ListScriptable();
 			}

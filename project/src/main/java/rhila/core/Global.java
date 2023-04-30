@@ -7,15 +7,23 @@ import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 
 import rhila.RhilaException;
-import rhila.lib.ConvertGetFunction;
+import rhila.lib.LibGetFunction;
 import rhila.scriptable.RhilaWrapper;
 import rhila.scriptable.RhinoGetFunction;
+import rhila.scriptable.ScriptableGetFunction;
 
 /**
  * globalオブジェクト.
  */
 public class Global extends ImporterTopLevel {
     private static final long serialVersionUID = 6802578607688922051L;
+    
+    // lambda snapStart CRaC用(Context).
+	@SuppressWarnings("deprecation")
+	protected static final Context CTX_CRAC = new Context();
+    
+    // lambda snapStart CRaC用(this).
+    protected static final Global LOAD_CRAC = new Global();
     
     // rhino js Optimization Level.
     // 最適化なし.
@@ -34,17 +42,15 @@ public class Global extends ImporterTopLevel {
     // env定義.
     private ProcessEnv env;
     
-    // シングルトン.
-    private static final Global SNGL = new Global();
-    
-    // 新しいオブジェクトを取得.
+    // 新しいglobalオブジェクトを取得.
     public static final Global getInstance(
     	ContextFactory factory, ProcessEnv env) {
-    	Global ret = SNGL.newInstance();
-        ret.initContextFactory(factory, env);
+    	Global ret = LOAD_CRAC.newInstance();
+        initContextFactory(ret, factory, env);
         return ret;
     }
     
+    // コンストラクタ.
     protected Global() {}
     
     // 新しいオブジェクトを生成する.
@@ -73,28 +79,13 @@ public class Global extends ImporterTopLevel {
     }
     
     // ContextFactory初期化処理.
-    protected void initContextFactory(
-        ContextFactory factory, ProcessEnv env) {
-        initGlobal(factory.enterContext(), env);
+    protected static final void initContextFactory(
+        Global global, ContextFactory factory, ProcessEnv env) {
+    	global.initGlobal(factory.enterContext(), env);
     }
     
-    @Override
-    public Object get(int arg0, Scriptable arg1) {
-        return RhilaWrapper.wrap(super.get(arg0, arg1));
-    }
-    
-    @Override
-    public void put(String arg0, Scriptable arg1, Object arg2) {
-        super.put(arg0, arg1, RhilaWrapper.unwrap(arg2));
-    }
-
-    @Override
-    public void put(int arg0, Scriptable arg1, Object arg2) {
-        super.put(arg0, arg1, RhilaWrapper.unwrap(arg2));
-    }
-        
     // 初期化処理.
-    protected void initGlobal(Context ctx, ProcessEnv env) {
+    private void initGlobal(Context ctx, ProcessEnv env) {
         // 初期化済み.
         if(initFlag) {
             // エラー出力.
@@ -127,6 +118,8 @@ public class Global extends ImporterTopLevel {
         ScriptableObject.deleteProperty(this, "Date");
         ScriptableObject.deleteProperty(this, "Object");
         ScriptableObject.deleteProperty(this, "Array");
+        ScriptableObject.deleteProperty(this, "encodeURIComponent");
+        ScriptableObject.deleteProperty(this, "decodeURIComponent");
         
         // 変数定義.
         ScriptableObject.putConstProperty(this, "global", this);
@@ -138,8 +131,9 @@ public class Global extends ImporterTopLevel {
     
     // 利用可能なGlobalFunction群登録リスト.
     private static final RhinoGetFunction[] GET_FUNCTIONS = new RhinoGetFunction[] {
-        CommonGetFunction.getInstance()
-        ,ConvertGetFunction.getInstance()
+        CoreGetFunction.getInstance()
+        ,ScriptableGetFunction.getInstance()
+        ,LibGetFunction.getInstance()
     };
     private static final int GET_FUNCTION_LENGTH = GET_FUNCTIONS.length;
     
@@ -155,5 +149,20 @@ public class Global extends ImporterTopLevel {
         }
         // 存在しない場合はGlobal内容を取得.
         return RhilaWrapper.wrap(super.get(arg0, arg1));
+    }
+    
+    @Override
+    public Object get(int arg0, Scriptable arg1) {
+        return RhilaWrapper.wrap(super.get(arg0, arg1));
+    }
+    
+    @Override
+    public void put(String arg0, Scriptable arg1, Object arg2) {
+        super.put(arg0, arg1, RhilaWrapper.unwrap(arg2));
+    }
+
+    @Override
+    public void put(int arg0, Scriptable arg1, Object arg2) {
+        super.put(arg0, arg1, RhilaWrapper.unwrap(arg2));
     }
 }

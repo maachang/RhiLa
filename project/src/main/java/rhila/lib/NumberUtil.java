@@ -59,7 +59,8 @@ public final class NumberUtil {
 	public static final boolean isFloat(Object n) {
 		if (NumberUtil.isNumeric(n)) {
 			String s;
-			if (n instanceof Float || n instanceof Double || n instanceof BigDecimal) {
+			if (n instanceof Float || n instanceof Double ||
+				n instanceof BigDecimal) {
 				return true;
 			} else if (n instanceof String) {
 				s = (String)n;
@@ -67,7 +68,7 @@ public final class NumberUtil {
 				s = n.toString().trim();
 			}
 			if(isHex(s)) {
-				return true;
+				return false;
 			}
 			return s.indexOf(".") != -1;
 		}

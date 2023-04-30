@@ -107,35 +107,49 @@ public class Base64 {
 	 *            バイナリの変換長を設定します.
 	 * @return byte[] Base64にエンコードされたバイナリ情報が返されます.
 	 */
-	public static final byte[] encodeBinary(final byte[] binary, int off, int length) {
+	public static final byte[] encodeBinary(
+		final byte[] binary, int off, int length) {
 		if (binary == null || off < 0 || length <= 0) {
-			throw new IllegalArgumentException("The argument is invalid.");
+			throw new IllegalArgumentException(
+				"The argument is invalid.");
 		}
 		int i, j, k;
 		final int etc = length % 3;
 		final int len = length / 3;
 		final byte[] ary = new byte[(len * 4) + ((etc != 0) ? 4 : 0)];
 		for (i = 0, j = off, k = 0; i < len; i ++, j += 3, k += 4) {
-			ary[k] = Base64.ENC_CD[(int) ((binary[j] & 0x000000fc) >> 2)];
-			ary[k + 1] = Base64.ENC_CD[(int) (((binary[j] & 0x00000003) << 4) | ((binary[j + 1] & 0x000000f0) >> 4))];
-			ary[k + 2] = Base64.ENC_CD[(int) (((binary[j + 1] & 0x0000000f) << 2) | ((binary[j + 2] & 0x000000c0) >> 6))];
-			ary[k + 3] = Base64.ENC_CD[(int) (binary[j + 2] & 0x0000003f)];
+			ary[k] = Base64.ENC_CD[
+			    (int) ((binary[j] & 0x000000fc) >> 2)];
+			ary[k + 1] = Base64.ENC_CD[
+			    (int) (((binary[j] & 0x00000003) << 4) |
+			        ((binary[j + 1] & 0x000000f0) >> 4))];
+			ary[k + 2] = Base64.ENC_CD[
+			    (int) (((binary[j + 1] & 0x0000000f) << 2) |
+			    	((binary[j + 2] & 0x000000c0) >> 6))];
+			ary[k + 3] = Base64.ENC_CD[
+			    (int) (binary[j + 2] & 0x0000003f)];
 		}
 		switch (etc) {
 		case 1:
 			j = length + off - 1;
 			k = len * 4;
-			ary[k] = Base64.ENC_CD[(int) ((binary[j] & 0x000000fc) >> 2)];
-			ary[k + 1] = Base64.ENC_CD[(int) ((binary[j] & 0x00000003) << 4)];
+			ary[k] = Base64.ENC_CD[
+			    (int) ((binary[j] & 0x000000fc) >> 2)];
+			ary[k + 1] = Base64.ENC_CD[
+			    (int) ((binary[j] & 0x00000003) << 4)];
 			ary[k + 2] = Base64.REMAINDER_ENC;
 			ary[k + 3] = Base64.REMAINDER_ENC;
 			break;
 		case 2:
 			j = length + off - 2;
 			k = len * 4;
-			ary[k] = Base64.ENC_CD[(int) ((binary[j] & 0x000000fc) >> 2)];
-			ary[k + 1] = Base64.ENC_CD[(int) (((binary[j] & 0x00000003) << 4) | ((binary[j + 1] & 0x000000f0) >> 4))];
-			ary[k + 2] = Base64.ENC_CD[(int) (((binary[j + 1] & 0x0000000f) << 2))];
+			ary[k] = Base64.ENC_CD[
+			    (int) ((binary[j] & 0x000000fc) >> 2)];
+			ary[k + 1] = Base64.ENC_CD[
+			    (int) (((binary[j] & 0x00000003) << 4) |
+			    	((binary[j + 1] & 0x000000f0) >> 4))];
+			ary[k + 2] = Base64.ENC_CD[
+			    (int) (((binary[j + 1] & 0x0000000f) << 2))];
 			ary[k + 3] = Base64.REMAINDER_ENC;
 			break;
 		}
@@ -164,7 +178,8 @@ public class Base64 {
 	 *            バイナリの変換長を設定します.
 	 * @return String Base64にエンコードされた文字情報が返されます.
 	 */
-	public static final String encode(final byte[] binary, final int off, final int length) {
+	public static final String encode(
+		final byte[] binary, final int off, final int length) {
 		final byte[] ary = encodeBinary(binary, off, length);
 		try {
 			return new String(ary, "UTF8");
@@ -197,36 +212,45 @@ public class Base64 {
 		ret = new byte[(len * 3) - etc];
 		len -= 1;
 		for (i = 0, j = 0, k = 0; i < len; i++, j += 4, k += 3) {
-			ret[k] = (byte) (((Base64.DEC_CD[base64.charAt(j)] & 0x0000003f) << 2) | ((Base64.DEC_CD[base64
+			ret[k] = (byte) (((Base64.DEC_CD[
+			    base64.charAt(j)] & 0x0000003f) << 2) | ((Base64.DEC_CD[base64
 					.charAt(j + 1)] & 0x00000030) >> 4));
-			ret[k + 1] = (byte) (((Base64.DEC_CD[base64.charAt(j + 1)] & 0x0000000f) << 4) | ((Base64.DEC_CD[base64
+			ret[k + 1] = (byte) (((Base64.DEC_CD[
+			    base64.charAt(j + 1)] & 0x0000000f) << 4) | ((Base64.DEC_CD[base64
 					.charAt(j + 2)] & 0x0000003c) >> 2));
-			ret[k + 2] = (byte) (((Base64.DEC_CD[base64.charAt(j + 2)] & 0x00000003) << 6) | (Base64.DEC_CD[base64
+			ret[k + 2] = (byte) (((Base64.DEC_CD[
+			    base64.charAt(j + 2)] & 0x00000003) << 6) | (Base64.DEC_CD[base64
 					.charAt(j + 3)] & 0x0000003f));
 		}
 		switch (etc) {
 		case 0:
 			j = len * 4;
 			k = len * 3;
-			ret[k] = (byte) (((Base64.DEC_CD[base64.charAt(j)] & 0x0000003f) << 2) | ((Base64.DEC_CD[base64
+			ret[k] = (byte) (((Base64.DEC_CD[
+			    base64.charAt(j)] & 0x0000003f) << 2) | ((Base64.DEC_CD[base64
 					.charAt(j + 1)] & 0x00000030) >> 4));
-			ret[k + 1] = (byte) (((Base64.DEC_CD[base64.charAt(j + 1)] & 0x0000000f) << 4) | ((Base64.DEC_CD[base64
+			ret[k + 1] = (byte) (((Base64.DEC_CD[
+			    base64.charAt(j + 1)] & 0x0000000f) << 4) | ((Base64.DEC_CD[base64
 					.charAt(j + 2)] & 0x0000003c) >> 2));
-			ret[k + 2] = (byte) (((Base64.DEC_CD[base64.charAt(j + 2)] & 0x00000003) << 6) | (Base64.DEC_CD[base64
+			ret[k + 2] = (byte) (((Base64.DEC_CD[
+			    base64.charAt(j + 2)] & 0x00000003) << 6) | (Base64.DEC_CD[base64
 					.charAt(j + 3)] & 0x0000003f));
 			break;
 		case 1:
 			j = len * 4;
 			k = len * 3;
-			ret[k] = (byte) (((Base64.DEC_CD[base64.charAt(j)] & 0x0000003f) << 2) | ((Base64.DEC_CD[base64
+			ret[k] = (byte) (((Base64.DEC_CD[
+			    base64.charAt(j)] & 0x0000003f) << 2) | ((Base64.DEC_CD[base64
 					.charAt(j + 1)] & 0x00000030) >> 4));
-			ret[k + 1] = (byte) (((Base64.DEC_CD[base64.charAt(j + 1)] & 0x0000000f) << 4) | ((Base64.DEC_CD[base64
+			ret[k + 1] = (byte) (((Base64.DEC_CD[
+			    base64.charAt(j + 1)] & 0x0000000f) << 4) | ((Base64.DEC_CD[base64
 					.charAt(j + 2)] & 0x0000003c) >> 2));
 			break;
 		case 2:
 			j = len * 4;
 			k = len * 3;
-			ret[k] = (byte) (((Base64.DEC_CD[base64.charAt(j)] & 0x0000003f) << 2) | ((Base64.DEC_CD[base64
+			ret[k] = (byte) (((Base64.DEC_CD[
+			    base64.charAt(j)] & 0x0000003f) << 2) | ((Base64.DEC_CD[base64
 					.charAt(j + 1)] & 0x00000030) >> 4));
 			break;
 		}

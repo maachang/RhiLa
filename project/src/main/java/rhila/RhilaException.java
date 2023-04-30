@@ -4,11 +4,16 @@ import java.lang.reflect.Method;
 
 import org.mozilla.javascript.Context;
 
+import rhila.core.CoreGetFunction;
+
 /**
  * RhiLa用例外.
  */
 public class RhilaException extends RuntimeException {
 	private static final long serialVersionUID = 685708741908367818L;
+    // lambda snapStart CRaC用.
+	public static final RhilaException LOAD_CRAC = new RhilaException();
+	
 	protected int status;
 
 	public RhilaException(int status) {

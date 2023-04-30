@@ -10,14 +10,18 @@ import rhila.lib.Json;
 /**
  * jsonScriptable.
  */
-public class JsonScriptable implements RhinoScriptable<Object> {
-	private static final ArrayMap<String, Scriptable> instanceList =
-		new ArrayMap<String, Scriptable>();
+public class JsonScriptableObject implements RhinoScriptable<Object> {
+    // lambda snapStart CRaC用.
+    protected static final JsonScriptableObject LOAD_CRAC = new JsonScriptableObject();
+	
+	private static final ArrayMap<String, Scriptable> instanceList;
 	
 	// 初期設定.
 	static {
-		instanceList.put("stringify", new Stringify());
-		instanceList.put("parse", new Parse());
+		instanceList = new ArrayMap<String, Scriptable>(
+			"stringify", Stringify.LOAD_CRAC
+			,"parse", Parse.LOAD_CRAC
+		);
 	}
 	
 	@Override
@@ -32,6 +36,9 @@ public class JsonScriptable implements RhinoScriptable<Object> {
 	
 	// jsonエンコード.
 	private static final class Stringify extends AbstractRhinoFunction {
+	    // lambda snapStart CRaC用.
+	    protected static final Stringify LOAD_CRAC = new Stringify();
+	    // コンストラクタ.
 		protected Stringify() {}
 		@Override
 		public String getName() {
@@ -49,6 +56,9 @@ public class JsonScriptable implements RhinoScriptable<Object> {
 	
 	// jsonデコード.
 	private static final class Parse extends AbstractRhinoFunction {
+	    // lambda snapStart CRaC用.
+	    protected static final Parse LOAD_CRAC = new Parse();
+	    // コンストラクタ.
 		protected Parse() {}
 		@Override
 		public String getName() {

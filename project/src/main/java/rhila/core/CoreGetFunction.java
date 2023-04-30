@@ -4,50 +4,37 @@ import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.Undefined;
 
-import rhila.RhilaException;
 import rhila.lib.ArrayMap;
 import rhila.scriptable.AbstractRhinoFunction;
-import rhila.scriptable.Base64Scriptable;
-import rhila.scriptable.BinaryScriptable;
-import rhila.scriptable.DateScriptable;
-import rhila.scriptable.JsonScriptable;
-import rhila.scriptable.ListScriptable.ListScriptableObject;
-import rhila.scriptable.LowerKeyMapScriptable.LowerKeyMapScriptableObject;
-import rhila.scriptable.MapScriptable.MapScriptableObject;
 import rhila.scriptable.RhinoGetFunction;
 
 /**
- * common定義function.
+ * core用function.
  */
-public final class CommonGetFunction implements RhinoGetFunction {
-	protected CommonGetFunction() {}
-	public static final CommonGetFunction SNGL = new CommonGetFunction();
-	private static final ArrayMap<String, Scriptable> instanceList =
-		new ArrayMap<String, Scriptable>();
+public final class CoreGetFunction implements RhinoGetFunction {
+    // lambda snapStart CRaC用.
+	public static final CoreGetFunction LOAD_CRAC = new CoreGetFunction();
+	// functionインスタンス管理用.
+	private static final ArrayMap<String, Scriptable> instanceList;
 	
 	// 初期設定.
 	static {
-		instanceList.put("Date", new DateScriptable());
-		instanceList.put("JSON", new JsonScriptable());
-		instanceList.put("Base64", new Base64Scriptable());
-		instanceList.put("Map", new MapScriptableObject());
-		instanceList.put("Object", instanceList.get("Map"));
-		instanceList.put("LowerKeyMap", new LowerKeyMapScriptableObject());
-		instanceList.put("LoMap", instanceList.get("LowerKeyMap"));
-		instanceList.put("List", new ListScriptableObject());
-		instanceList.put("Array", instanceList.get("List"));
-		instanceList.put("gc", new Gc());
-		instanceList.put("eval", new Eval());
-		instanceList.put("binary", new Binary());
-		instanceList.put("className", new ClassName());
-		instanceList.put("print", new Print());
-		instanceList.put("errPrint", new ErrPrint());
+		instanceList = new ArrayMap<String, Scriptable>(
+			"gc", Gc.LOAD_CRAC
+			,"eval", Eval.LOAD_CRAC
+			,"className", ClassName.LOAD_CRAC
+			,"print", Print.LOAD_CRAC
+			,"errPrint", ErrPrint.LOAD_CRAC
+		);
 	}
 	
 	// オブジェクトを取得.
-	public static final CommonGetFunction getInstance() {
-		return SNGL;
+	public static final CoreGetFunction getInstance() {
+		return LOAD_CRAC;
 	}
+	
+	// コンストラクタ.
+	protected CoreGetFunction() {}
 	
     // Functionを取得.
 	public final Scriptable getFunction(String name) {
@@ -56,6 +43,9 @@ public final class CommonGetFunction implements RhinoGetFunction {
 	    	    
     // Javaクラス名を取得.
 	private static final class ClassName extends AbstractRhinoFunction {
+	    // lambda snapStart CRaC用.
+		protected static final ClassName LOAD_CRAC = new ClassName();
+		// コンストラクタ.
 		protected ClassName() {}
 		@Override
 		public String getName() {
@@ -75,6 +65,9 @@ public final class CommonGetFunction implements RhinoGetFunction {
 	
     // Print.
 	private static final class Print extends AbstractRhinoFunction {
+	    // lambda snapStart CRaC用.
+		protected static final Print LOAD_CRAC = new Print();
+		// コンストラクタ.
 		protected Print() {}
 		@Override
 		public String getName() {
@@ -100,6 +93,9 @@ public final class CommonGetFunction implements RhinoGetFunction {
 	
     // Print.
 	private static final class ErrPrint extends AbstractRhinoFunction {
+	    // lambda snapStart CRaC用.
+		protected static final ErrPrint LOAD_CRAC = new ErrPrint();
+		// コンストラクタ.
 		protected ErrPrint() {}
 		@Override
 		public String getName() {
@@ -124,6 +120,9 @@ public final class CommonGetFunction implements RhinoGetFunction {
     
     // javaガページコレクター実行.
 	private static final class Gc extends AbstractRhinoFunction {
+	    // lambda snapStart CRaC用.
+		protected static final Gc LOAD_CRAC = new Gc();
+		// コンストラクタ.
 		protected Gc() {}
 		@Override
 		public String getName() {
@@ -139,6 +138,9 @@ public final class CommonGetFunction implements RhinoGetFunction {
 	
     // evalでスクリプト実行.
 	private static final class Eval extends AbstractRhinoFunction {
+	    // lambda snapStart CRaC用.
+		protected static final Eval LOAD_CRAC = new Eval();
+		// コンストラクタ.
 		protected Eval() {}
 		@Override
 		public String getName() {
@@ -149,40 +151,5 @@ public final class CommonGetFunction implements RhinoGetFunction {
 		public Object function(Context ctx, Scriptable scope, Scriptable thisObj, Object[] args) {
 			return RunScript.eval((Global)thisObj, String.valueOf(args[0]));
 		}
-	}
-	
-	// binary生成.
-	private static final class Binary extends AbstractRhinoFunction {
-		protected Binary() {}
-		@Override
-		public String getName() {
-			return "binary";
-		}
-
-		@Override
-		public Object function(Context ctx, Scriptable scope, Scriptable thisObj, Object[] args) {
-			if(args == null || args.length == 0) {
-				throw new RhilaException("Argument not valid");
-			}
-			// バイナリ生成オプション群.
-			int len = args.length;
-			if(len == 1) {
-				Object o = args[0];
-				if(o instanceof byte[]) {
-					return new BinaryScriptable((byte[])o);
-				} else if(o instanceof BinaryScriptable) {
-					return new BinaryScriptable((BinaryScriptable)o);
-				} else if(o instanceof Number) {
-					return new BinaryScriptable(((Number)o).intValue());
-				} else if(o instanceof String) {
-					return new BinaryScriptable((String)o);
-				}
-			} else if(len == 2) {
-				if(args[0] instanceof String && args[1] instanceof String) {
-					return new BinaryScriptable((String)args[0], (String)args[1]);
-				}
-			}
-			throw new RhilaException("Argument not valid");		
-		}
-	}
+	}	
 }

@@ -15,6 +15,9 @@ import java.util.Map;
  */
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public class ArrayMap<K, V> {
+    // lambda snapStart CRaC用.
+	protected static final ArrayMap LOAD_CRAC = new ArrayMap();
+	
 	// 管理する情報.
 	protected final ObjectList<Entry<K, V>> list;
 
@@ -78,7 +81,8 @@ public class ArrayMap<K, V> {
 		mid = -1;
 		while (low <= high) {
 			mid = (low + high) >>> 1;
-			if ((cmp = ((Comparable)((Entry<K, V>)olst[mid]).key).compareTo(key)) < 0) {
+			if ((cmp = ((Comparable)((Entry<K, V>)olst[mid]).key)
+				.compareTo(key)) < 0) {
 				low = mid + 1;
 			} else if (cmp > 0) {
 				high = mid - 1;
@@ -91,7 +95,8 @@ public class ArrayMap<K, V> {
 			}
 		}
 		// 一致条件が見つからない場合.
-		mid = (((Comparable)((Entry<K, V>)olst[mid]).key).compareTo(key) < 0) ? mid + 1 : mid;
+		mid = (((Comparable)((Entry<K, V>)olst[mid]).key)
+			.compareTo(key) < 0) ? mid + 1 : mid;
 		list.add(null);
 		final int len = list.size();
 		olst = list.rawArray();
@@ -219,7 +224,7 @@ public class ArrayMap<K, V> {
 
 		@Override
 		public int compareTo(Object o) {
-			return key.compareTo(o);
+			return key.compareTo(((SortKey)o).key);
 		}
 	}
 
