@@ -24,6 +24,14 @@ https://blog.flinters.co.jp/entry/2023/02/21/122311
 
 結局 static でそのオブジェクトが存在して、それに対してJava実行時間に左右されるものは、それはstatic利用しないと言うのが結論かと思う.
 
+あと気になる記載として
+https://www.ragate.co.jp/blog/articles/17452
+
+にある「SnapStartの注意点」の
+> SnapStart は、完全修飾 Lambda ARN を呼び出す場合にのみ使用できます。つまり、特定の関数バージョンを出力して実行する場合です。
+
+この辺の内容も参考とする.
+
 ## 概要
 
 AWSのLambdaは、古くはAPI-Gateway経由、最近サポートされた関数URLによって、Webアプリが作れる環境が提供されている。

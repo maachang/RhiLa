@@ -8,6 +8,7 @@ import org.mozilla.javascript.ScriptableObject;
 
 import rhila.RhilaException;
 import rhila.lib.LibGetFunction;
+import rhila.lib.http.HttpGetFunction;
 import rhila.scriptable.RhilaWrapper;
 import rhila.scriptable.RhinoGetFunction;
 import rhila.scriptable.ScriptableGetFunction;
@@ -17,10 +18,6 @@ import rhila.scriptable.ScriptableGetFunction;
  */
 public class Global extends ImporterTopLevel {
     private static final long serialVersionUID = 6802578607688922051L;
-    
-    // lambda snapStart CRaC用(Context).
-	@SuppressWarnings("deprecation")
-	protected static final Context CTX_CRAC = new Context();
     
     // lambda snapStart CRaC用(this).
     protected static final Global LOAD_CRAC = new Global();
@@ -43,25 +40,24 @@ public class Global extends ImporterTopLevel {
     private ProcessEnv env;
     
     // 新しいglobalオブジェクトを取得.
+    public static final Global getInstance() {
+    	if(!LOAD_CRAC.initFlag) {
+    		throw new RhilaException("Global is not initialized."); 
+    	}
+    	return LOAD_CRAC;
+    }
+    
+    // globalオブジェクトを取得.
     public static final Global getInstance(
     	ContextFactory factory, ProcessEnv env) {
-    	Global ret = LOAD_CRAC.newInstance();
-        initContextFactory(ret, factory, env);
-        return ret;
+    	if(!LOAD_CRAC.initFlag) {
+	    	initContextFactory(LOAD_CRAC, factory, env);
+    	}
+    	return LOAD_CRAC;
     }
     
     // コンストラクタ.
     protected Global() {}
-    
-    // 新しいオブジェクトを生成する.
-    private final Global newInstance() {
-    	return new Global();
-    }
-    
-    // 初期化完了チェック.
-    public boolean isInit() {
-        return initFlag;
-    }
     
     // context取得.
     public Context getContext() {
@@ -134,6 +130,7 @@ public class Global extends ImporterTopLevel {
         CoreGetFunction.getInstance()
         ,ScriptableGetFunction.getInstance()
         ,LibGetFunction.getInstance()
+        ,HttpGetFunction.getInstance()
     };
     private static final int GET_FUNCTION_LENGTH = GET_FUNCTIONS.length;
     

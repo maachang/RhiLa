@@ -149,7 +149,7 @@ public final class CoreGetFunction implements RhinoGetFunction {
 
 		@Override
 		public Object function(Context ctx, Scriptable scope, Scriptable thisObj, Object[] args) {
-			return RunScript.eval((Global)thisObj, String.valueOf(args[0]));
+			return RunScript.eval(thisObj, String.valueOf(args[0]));
 		}
 	}	
 }

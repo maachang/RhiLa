@@ -178,9 +178,16 @@ public class HttpStatus {
 	// [js]HttpStatusFunctions.
 	private static final class HttpStatusFunctions
 		extends AbstractRhinoFunctionInstance {
+	    // lambda snapStart CRaC用.
+	    @SuppressWarnings("unused")
+		protected static final HttpStatusFunctions LOAD_CRAC = new HttpStatusFunctions();
+		
 		private int type;
 		private String typeString;
 		private HttpStatus status;
+		
+		// コンストラクタ.
+		private HttpStatusFunctions() {}
 		
 		// コンストラクタ.
 		private HttpStatusFunctions(int type) {
@@ -245,13 +252,21 @@ public class HttpStatus {
 	
 	// [js]HttpStatus.
 	public static final class HttpStatusScriptable extends AbstractRhinoFunction {
+	    // lambda snapStart CRaC用.
+	    protected static final HttpStatusScriptable LOAD_CRAC = new HttpStatusScriptable();
+	    
 		protected HttpStatusScriptable() {}
-		HttpStatus status = null;
+		HttpStatus object = null;
 		private boolean staticFlag = true;
 		
 		@Override
 		public String getClassName() {
 			return "HttpStatusScriptable";
+		}
+		
+		// 元のオブジェクトを取得.
+		public HttpStatus getSrc() {
+			return object;
 		}
 		
 		// new HttpStatusScriptable();
@@ -262,12 +277,12 @@ public class HttpStatus {
 			// 引数長を取得.
 			final int len = arg2 == null || arg2.length == 0 ? 0 : arg2.length;
 			if(len == 0) {
-				ret.status = new HttpStatus();
+				ret.object = new HttpStatus();
 			} else if(len == 1) {
-				ret.status = new HttpStatus(NumberUtil.parseInt(
+				ret.object = new HttpStatus(NumberUtil.parseInt(
 					arg2[0]));
 			} else {
-				ret.status = new HttpStatus(NumberUtil.parseInt(
+				ret.object = new HttpStatus(NumberUtil.parseInt(
 					arg2[0]), String.valueOf(arg2[1]));
 			}
 			ret.staticFlag = false;
@@ -277,6 +292,11 @@ public class HttpStatus {
 		@Override
 		public String getName() {
 			return "[HttpStatus]";
+		}
+		
+		@Override
+		public String toString() {
+			return getName();
 		}
 		
 		@Override
@@ -293,7 +313,7 @@ public class HttpStatus {
 				}
 			}
 			// オブジェクト管理の生成Functionを取得.
-			Object ret = status.objInsList.get(name);
+			Object ret = object.objInsList.get(name);
 			// 存在しない場合.
 			if(ret == null) {
 				// static管理のオブジェクトを取得.
@@ -302,8 +322,8 @@ public class HttpStatus {
 				if(ret != null) {
 					// オブジェクト管理の生成Functionとして管理.
 					ret = ((AbstractRhinoFunctionInstance)ret)
-						.getInstance(status);
-					status.objInsList.put(name, ret);
+						.getInstance(object);
+					object.objInsList.put(name, ret);
 				}
 			}
 			return ret;

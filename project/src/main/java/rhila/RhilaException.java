@@ -4,8 +4,6 @@ import java.lang.reflect.Method;
 
 import org.mozilla.javascript.Context;
 
-import rhila.core.CoreGetFunction;
-
 /**
  * RhiLa用例外.
  */
