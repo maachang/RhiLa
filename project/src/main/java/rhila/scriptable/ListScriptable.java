@@ -407,7 +407,7 @@ public class ListScriptable
 	public static final class ListScriptableObject
 		extends AbstractRhinoFunction {
 	    // lambda snapStart CRaC用.
-	    protected static final ListScriptableObject LOAD_CRAC =
+	    public static final ListScriptableObject LOAD_CRAC =
 	    	new ListScriptableObject();
 		
 		@SuppressWarnings("rawtypes")

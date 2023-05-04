@@ -10,6 +10,9 @@ import rhila.RhilaException;
  * 数値ユーティリティ.
  */
 public final class NumberUtil {
+    // lambda snapStart CRaC用.
+    protected static final NumberUtil LOAD_CRAC = new NumberUtil();
+    
 	private NumberUtil() {}
 	
 	// hexかチェック.

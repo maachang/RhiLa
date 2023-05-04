@@ -13,7 +13,6 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Member;
@@ -26,12 +25,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+
 import org.mozilla.javascript.ScriptRuntime.StringIdOrIndex;
-import org.mozilla.javascript.annotations.JSConstructor;
-import org.mozilla.javascript.annotations.JSFunction;
-import org.mozilla.javascript.annotations.JSGetter;
-import org.mozilla.javascript.annotations.JSSetter;
-import org.mozilla.javascript.annotations.JSStaticFunction;
 import org.mozilla.javascript.debug.DebuggableObject;
 
 /**
@@ -1085,13 +1080,14 @@ public abstract class ScriptableObject
         final String setterPrefix = "jsSet_";
         final String ctorName = "jsConstructor";
 
-        Member ctorMember = findAnnotatedMember(methods, JSConstructor.class);
-        if (ctorMember == null) {
-            ctorMember = findAnnotatedMember(ctors, JSConstructor.class);
-        }
-        if (ctorMember == null) {
+        //Member ctorMember = findAnnotatedMember(methods, JSConstructor.class);
+        //if (ctorMember == null) {
+        //    ctorMember = findAnnotatedMember(ctors, JSConstructor.class);
+        //}
+        Member ctorMember;
+        //if (ctorMember == null) {
             ctorMember = FunctionObject.findSingleMethod(methods, ctorName);
-        }
+        //}
         if (ctorMember == null) {
             if (ctors.length == 1) {
                 ctorMember = ctors[0];
@@ -1134,6 +1130,7 @@ public abstract class ScriptableObject
 
             Annotation annotation = null;
             String prefix = null;
+            /**
             if (method.isAnnotationPresent(JSFunction.class)) {
                 annotation = method.getAnnotation(JSFunction.class);
             } else if (method.isAnnotationPresent(JSStaticFunction.class)) {
@@ -1143,6 +1140,7 @@ public abstract class ScriptableObject
             } else if (method.isAnnotationPresent(JSSetter.class)) {
                 continue;
             }
+            **/
 
             if (annotation == null) {
                 if (name.startsWith(functionPrefix)) {
@@ -1159,7 +1157,8 @@ public abstract class ScriptableObject
             }
 
             boolean isStatic =
-                    annotation instanceof JSStaticFunction || prefix == staticFunctionPrefix;
+                    //annotation instanceof JSStaticFunction || 
+            		prefix == staticFunctionPrefix;
             HashSet<String> names = isStatic ? staticNames : instanceNames;
             String propName = getPropertyName(name, prefix, annotation);
             if (names.contains(propName)) {
@@ -1168,7 +1167,8 @@ public abstract class ScriptableObject
             names.add(propName);
             name = propName;
 
-            if (annotation instanceof JSGetter || prefix == getterPrefix) {
+            //if (annotation instanceof JSGetter || prefix == getterPrefix) {
+            if (prefix == getterPrefix) {
                 if (!(proto instanceof ScriptableObject)) {
                     throw Context.reportRuntimeErrorById(
                             "msg.extend.scriptable", proto.getClass().toString(), name);
@@ -1214,6 +1214,7 @@ public abstract class ScriptableObject
         return ctor;
     }
 
+    /**
     private static Member findAnnotatedMember(
             AccessibleObject[] members, Class<? extends Annotation> annotation) {
         for (AccessibleObject member : members) {
@@ -1223,10 +1224,11 @@ public abstract class ScriptableObject
         }
         return null;
     }
+    **/
 
     private static Method findSetterMethod(Method[] methods, String name, String prefix) {
-        String newStyleName = "set" + Character.toUpperCase(name.charAt(0)) + name.substring(1);
-        for (Method method : methods) {
+        //String newStyleName = "set" + Character.toUpperCase(name.charAt(0)) + name.substring(1);
+        /**for (Method method : methods) {
             JSSetter annotation = method.getAnnotation(JSSetter.class);
             if (annotation != null) {
                 if (name.equals(annotation.value())
@@ -1235,7 +1237,7 @@ public abstract class ScriptableObject
                     return method;
                 }
             }
-        }
+        }**/
         String oldStyleName = prefix + name;
         for (Method method : methods) {
             if (oldStyleName.equals(method.getName())) {
@@ -1250,6 +1252,7 @@ public abstract class ScriptableObject
             return methodName.substring(prefix.length());
         }
         String propName = null;
+        /**
         if (annotation instanceof JSGetter) {
             propName = ((JSGetter) annotation).value();
             if (propName == null || propName.length() == 0) {
@@ -1271,6 +1274,7 @@ public abstract class ScriptableObject
         } else if (annotation instanceof JSStaticFunction) {
             propName = ((JSStaticFunction) annotation).value();
         }
+        **/
         if (propName == null || propName.length() == 0) {
             propName = methodName;
         }

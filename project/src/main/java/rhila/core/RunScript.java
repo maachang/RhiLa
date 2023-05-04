@@ -11,6 +11,8 @@ import rhila.RhilaException;
  * jsを実行する.
  */
 public final class RunScript {
+    // lambda snapStart CRaC用.
+    protected static final RunScript LOAD_CRAC = new RunScript();
 	
 	// static専用.
 	protected RunScript() {}

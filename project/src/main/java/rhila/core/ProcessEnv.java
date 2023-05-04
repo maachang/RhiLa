@@ -4,12 +4,12 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import rhila.scriptable.MapScriptable;
+import rhila.scriptable.LowerKeyMapScriptable;
 
 /**
  * Process.env内容.
  */
-public class ProcessEnv extends MapScriptable {
+public class ProcessEnv extends LowerKeyMapScriptable {
 	private static final long serialVersionUID = 5742692955715437649L;
 	
     // lambda snapStart CRaC用.

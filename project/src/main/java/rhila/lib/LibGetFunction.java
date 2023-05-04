@@ -36,6 +36,18 @@ public class LibGetFunction implements RhinoGetFunction {
 			,"encodeURIComponent", EncodeURIComponent.LOAD_CRAC
 			,"decodeURIComponent", DecodeURIComponent.LOAD_CRAC
 		);
+		
+		// lambda snapStart CRaC用.
+		ArrayMap.LOAD_CRAC.getClass();
+		ByteArrayBuffer.LOAD_CRAC.getClass();
+		ObjectList.LOAD_CRAC.getClass();
+		Xor128.LOAD_CRAC.getClass();
+		Base64.LOAD_CRAC.getClass();
+		BooleanUtil.LOAD_CRAC.getClass();
+		DateUtil.LOAD_CRAC.getClass();
+		Json.LOAD_CRAC.getClass();
+		NumberUtil.LOAD_CRAC.getClass();
+		ObjectUtil.LOAD_CRAC.getClass();
 	};
 	
 	// オブジェクトを取得.

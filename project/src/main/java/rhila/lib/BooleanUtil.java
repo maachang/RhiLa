@@ -6,6 +6,9 @@ import rhila.RhilaException;
  * BooleanUtil.
  */
 public class BooleanUtil {
+    // lambda snapStart CRaC用.
+    protected static final BooleanUtil LOAD_CRAC = new BooleanUtil();
+    
 	private BooleanUtil() {}
 
 	/**

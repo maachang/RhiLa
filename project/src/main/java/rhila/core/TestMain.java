@@ -4,7 +4,6 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
 import org.mozilla.javascript.Context;
-import org.mozilla.javascript.ContextFactory;
 import org.mozilla.javascript.Undefined;
 import org.mozilla.javascript.Version;
 
@@ -19,9 +18,9 @@ public class TestMain {
 	
 	public static final void exec(String args[]) throws Exception {
 		final BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
-		final ContextFactory factory = new ContextFactory();
 		final ProcessEnv processEnv = new ProcessEnv();
-		final Global global = Global.getInstance(factory, processEnv);
+		final Global global = Global.getInstance();
+		global.setEnv(processEnv);
 		try {
 			Object out;
 			String cmd;

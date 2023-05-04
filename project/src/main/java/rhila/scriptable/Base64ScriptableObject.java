@@ -12,7 +12,8 @@ import rhila.lib.Base64;
  */
 public class Base64ScriptableObject implements RhinoScriptable<Object> {
     // lambda snapStart CRaC用.
-    protected static final Base64ScriptableObject LOAD_CRAC = new Base64ScriptableObject();
+    protected static final Base64ScriptableObject LOAD_CRAC =
+    	new Base64ScriptableObject();
 	
 	private static final ArrayMap<String, Scriptable> instanceList;
 	
@@ -22,6 +23,11 @@ public class Base64ScriptableObject implements RhinoScriptable<Object> {
 			"encode", Encode.LOAD_CRAC
 			,"decode", Decode.LOAD_CRAC
 		);
+	}
+	
+	@Override
+	public String toString() {
+		return "[Base64]";
 	}
 	
 	@Override

@@ -18,6 +18,9 @@ import rhila.scriptable.RhilaWrapper;
  */
 @SuppressWarnings("rawtypes")
 public final class Json {
+    // lambda snapStart CRaC用.
+    protected static final Json LOAD_CRAC = new Json();
+    
 	protected Json() {}
 
 	// array.

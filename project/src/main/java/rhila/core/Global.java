@@ -6,6 +6,7 @@ import org.mozilla.javascript.ImporterTopLevel;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 
+import rhila.CRaCDefine;
 import rhila.RhilaException;
 import rhila.lib.LibGetFunction;
 import rhila.lib.http.HttpGetFunction;
@@ -19,8 +20,19 @@ import rhila.scriptable.ScriptableGetFunction;
 public class Global extends ImporterTopLevel {
     private static final long serialVersionUID = 6802578607688922051L;
     
-    // lambda snapStart CRaC用(this).
-    protected static final Global LOAD_CRAC = new Global();
+    // シングルトン.
+    public static final Global SNGL = new Global();
+    
+    // Lambda snapStart用 CRaC呼び出し.
+    static {
+    	// rhila環境のCRaC呼び出し
+    	CRaCDefine.LOAD_CRAC.getClass();
+    	
+    	// GlobalのCRaC呼び出し
+		initContextFactory(new ContextFactory());
+		// script実行での実行関連のCRaC呼び出し.
+		RunScript.eval("1 + 1;");
+    }
     
     // rhino js Optimization Level.
     // 最適化なし.
@@ -41,19 +53,10 @@ public class Global extends ImporterTopLevel {
     
     // 新しいglobalオブジェクトを取得.
     public static final Global getInstance() {
-    	if(!LOAD_CRAC.initFlag) {
+    	if(!SNGL.initFlag) {
     		throw new RhilaException("Global is not initialized."); 
     	}
-    	return LOAD_CRAC;
-    }
-    
-    // globalオブジェクトを取得.
-    public static final Global getInstance(
-    	ContextFactory factory, ProcessEnv env) {
-    	if(!LOAD_CRAC.initFlag) {
-	    	initContextFactory(LOAD_CRAC, factory, env);
-    	}
-    	return LOAD_CRAC;
+    	return SNGL;
     }
     
     // コンストラクタ.
@@ -69,19 +72,26 @@ public class Global extends ImporterTopLevel {
         return env;
     }
     
+    public Global setEnv(ProcessEnv env) {
+    	this.env = env;
+        ScriptableObject.deleteProperty(this, "env");
+        ScriptableObject.putConstProperty(this, "env", env);
+        return this;
+    }
+    
     @Override
     public String toString() {
         return "[global]";
     }
     
     // ContextFactory初期化処理.
-    protected static final void initContextFactory(
-        Global global, ContextFactory factory, ProcessEnv env) {
-    	global.initGlobal(factory.enterContext(), env);
+    private static final void initContextFactory(
+        ContextFactory factory) {
+    	SNGL.initGlobal(factory.enterContext());
     }
     
     // 初期化処理.
-    private void initGlobal(Context ctx, ProcessEnv env) {
+    private void initGlobal(Context ctx) {
         // 初期化済み.
         if(initFlag) {
             // エラー出力.
@@ -93,7 +103,6 @@ public class Global extends ImporterTopLevel {
             // 新規作成.
             env = new ProcessEnv();
         }
-        this.env = env;
         this.ctx = ctx;
         
         // javaPrimitiveのwrapをOff.
@@ -111,15 +120,18 @@ public class Global extends ImporterTopLevel {
         // 登録済み変数の削除.
         ScriptableObject.deleteProperty(this, "global");
         ScriptableObject.deleteProperty(this, "eval");
+        ScriptableObject.deleteProperty(this, "Function");
         ScriptableObject.deleteProperty(this, "Date");
         ScriptableObject.deleteProperty(this, "Object");
         ScriptableObject.deleteProperty(this, "Array");
+        ScriptableObject.deleteProperty(this, "JSON");
         ScriptableObject.deleteProperty(this, "encodeURIComponent");
         ScriptableObject.deleteProperty(this, "decodeURIComponent");
+        ScriptableObject.deleteProperty(this, "setTimeout");
+        ScriptableObject.deleteProperty(this, "setInterval");
         
         // 変数定義.
         ScriptableObject.putConstProperty(this, "global", this);
-        ScriptableObject.putConstProperty(this, "env", env);
         
         // 初期化済み.
         initFlag = true;

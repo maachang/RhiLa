@@ -15,7 +15,7 @@ import rhila.scriptable.RhinoGetFunction;
 public class HttpGetFunction implements RhinoGetFunction {
 	protected HttpGetFunction() {}
     // lambda snapStart CRaC用.
-	protected static final HttpGetFunction LOAD_CRAC = new HttpGetFunction();
+	public static final HttpGetFunction LOAD_CRAC = new HttpGetFunction();
 	// functionインスタンス管理用.
 	private static final ArrayMap<String, Scriptable> instanceList;
 	
@@ -27,6 +27,12 @@ public class HttpGetFunction implements RhinoGetFunction {
 			,"HttpStatus", HttpStatusScriptable.LOAD_CRAC
 			,"MimeType", MimeTypeScriptable.LOAD_CRAC
 		);
+		
+		// lambda snapStart CRaC用.
+		HttpCookieValue.LOAD_CRAC.getClass();
+		HttpHeader.LOAD_CRAC.getClass();
+		HttpStatus.LOAD_CRAC.getClass();
+		MimeType.LOAD_CRAC.getClass();
 	}
 	
 	// オブジェクトを取得.

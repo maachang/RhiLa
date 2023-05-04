@@ -189,7 +189,7 @@ public final class Xor128 {
 		
 		@Override
 		public String getName() {
-			return "nextInt";
+			return "nextString";
 		}
 		
 		@Override
@@ -234,7 +234,10 @@ public final class Xor128 {
 		}
 		@Override
 		public String toString() {
-			return "[Random]";
+			if(staticFlag) {
+				return "[Random]";
+			}
+			return String.valueOf(src.nextInt());
 		}
 		
 		@Override

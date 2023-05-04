@@ -26,6 +26,10 @@ public final class CoreGetFunction implements RhinoGetFunction {
 			,"print", Print.LOAD_CRAC
 			,"errPrint", ErrPrint.LOAD_CRAC
 		);
+		
+		// lambda snapStart CRaC用.
+		ProcessEnv.LOAD_CRAC.getClass();
+		RunScript.LOAD_CRAC.getClass();
 	}
 	
 	// オブジェクトを取得.

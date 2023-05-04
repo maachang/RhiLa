@@ -14,7 +14,7 @@ import rhila.scriptable.MapScriptable.MapScriptableObject;
 public class ScriptableGetFunction implements RhinoGetFunction {
 	protected ScriptableGetFunction() {}
     // lambda snapStart CRaC用.
-	protected static final ScriptableGetFunction LOAD_CRAC = new ScriptableGetFunction();
+	public static final ScriptableGetFunction LOAD_CRAC = new ScriptableGetFunction();
 	// functionインスタンス管理用.
 	private static final ArrayMap<String, Scriptable> instanceList;
 	
@@ -32,6 +32,12 @@ public class ScriptableGetFunction implements RhinoGetFunction {
 			,"Base64", Base64ScriptableObject.LOAD_CRAC
 			,"Binary", BinaryScriptableObject.LOAD_CRAC
 		);
+		
+		// lambda snapStart CRaC用.
+		DateScriptable.LOAD_CRAC.getClass();
+		ListScriptable.LOAD_CRAC.getClass();
+		LowerKeyMapScriptable.LOAD_CRAC.getClass();
+		MapScriptable.LOAD_CRAC.getClass();
 	}
 	
 	// オブジェクトを取得.

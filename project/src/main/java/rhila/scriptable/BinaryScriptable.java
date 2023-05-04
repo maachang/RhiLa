@@ -312,5 +312,4 @@ public class BinaryScriptable implements RhinoScriptable<byte[]> {
 			return "[Binary]";
 		}
 	}
-
 }

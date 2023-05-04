@@ -33,8 +33,6 @@ public final class HttpClient {
 	// -Djdk.tls.client.protocols=TLSv1.2
 	//              or
 	// System.setProperty("jdk.tls.client.protocols", "TLSv1.2");
-	//              or
-	// ＠SystemProperty(key="jdk.tls.client.protocols", value="TLSv1.2")
 	//
 
 	protected HttpClient() {

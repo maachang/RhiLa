@@ -25,6 +25,11 @@ public class JsonScriptableObject implements RhinoScriptable<Object> {
 	}
 	
 	@Override
+	public String toString() {
+		return "[JSON]";
+	}
+	
+	@Override
 	public Object get(String arg0, Scriptable arg1) {
 		return getFunction(arg0);
 	}

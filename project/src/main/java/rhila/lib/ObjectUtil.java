@@ -9,6 +9,9 @@ import rhila.RhilaException;
 
 // Object系判別Util.
 public final class ObjectUtil {
+    // lambda snapStart CRaC用.
+    protected static final ObjectUtil LOAD_CRAC = new ObjectUtil();
+    
 	protected ObjectUtil() {}
 	
 	// nullチェック.

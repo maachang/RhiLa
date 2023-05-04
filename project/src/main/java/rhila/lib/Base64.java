@@ -6,6 +6,9 @@ import rhila.RhilaException;
  * Base64.
  */
 public class Base64 {
+    // lambda snapStart CRaC用.
+    protected static final Base64 LOAD_CRAC = new Base64();
+    
 	/**
 	 * 無効コード値.
 	 */

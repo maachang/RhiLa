@@ -102,7 +102,7 @@ public class LowerKeyMapScriptable extends MapScriptable {
 	public static final class LowerKeyMapScriptableObject
 		extends AbstractRhinoFunction {
 	    // lambda snapStart CRaC用.
-	    protected static final LowerKeyMapScriptableObject LOAD_CRAC =
+	    public static final LowerKeyMapScriptableObject LOAD_CRAC =
 	    	new LowerKeyMapScriptableObject();
 		
 		@SuppressWarnings({ "rawtypes", "unchecked" })

@@ -23,6 +23,9 @@ import rhila.RhilaException;
  * 日付関連ユーティリティ.
  */
 public class DateUtil {
+    // lambda snapStart CRaC用.
+    protected static final DateUtil LOAD_CRAC = new DateUtil();
+    
 	private DateUtil() {}
 
 	/** グリニッジ標準時タイムゾーン. **/
