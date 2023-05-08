@@ -9,6 +9,7 @@ import org.mozilla.javascript.Scriptable;
 
 import rhila.RhilaException;
 import rhila.lib.ArrayMap;
+import rhila.lib.NumberUtil;
 import rhila.lib.ObjectUtil;
 import rhila.lib.http.HttpCookieValue.HttpCookieValueScriptable;
 import rhila.scriptable.AbstractRhinoFunction;
@@ -26,14 +27,14 @@ public final class HttpHeader {
 	private static final Object[] ZERO_KEYS = new Object[0];
     
 	// instance可能なScriptable.
-	private static final ArrayMap<String, Scriptable> instanceList =
-		new ArrayMap<String, Scriptable>();
+	private static final ArrayMap<String, Scriptable> instanceList;
     
     // [js]functions.
 	private static final String[] FUNCTION_NAMES = new String[] {
 		"clear"
 		,"clearCookie"
 		,"clearHeader"
+		,"getContentLength"
 		,"getContentType"
 		,"getCookie"
 		,"getCookieKeys"
@@ -43,6 +44,7 @@ public final class HttpHeader {
 		,"getHeaderSize"
 		,"removeCookie"
 		,"removeHeader"
+		,"setContentLength"
 		,"setContentType"
 		,"setCookie"
 		,"setHeader"
@@ -50,11 +52,14 @@ public final class HttpHeader {
 	};
 	
 	static {
-		final int len = FUNCTION_NAMES.length;
-		for(int i = 0; i < len; i ++) {
-			instanceList.put(FUNCTION_NAMES[i],
-				new HttpHeaderFunctions(i));
+		// 配列で直接追加.
+		final int len = FUNCTION_NAMES.length * 2;
+		Object[] list = new Object[len];
+		for(int i = 0, j = 0; i < len; i += 2, j ++) {
+			list[i] = FUNCTION_NAMES[j];
+			list[i + 1] = new HttpHeaderFunctions(j);
 		}
+		instanceList = new ArrayMap<String, Scriptable>(list);
 	}
 	
 	// objectインスタンスリスト.
@@ -143,8 +148,35 @@ public final class HttpHeader {
 	}
 	
 	// コンテンツタイプを設定.
-	public void setContentType(String value) {
-		headers.put("content-type", value);
+	public HttpHeader setContentType(String value) {
+		if(value == null) {
+			headers().remove("content-type");
+			return this;
+		}
+		headers().put("content-type", value);
+		return this;
+	}
+	
+	// コンテンツ長を取得.
+	public long getContentLength() {
+		if(headers == null) {
+			return -1L;
+		}
+		String s = (String)headers.get("content-length");
+		if(s == null || !NumberUtil.isNumeric(s)) {
+			return -1L;
+		}
+		return NumberUtil.parseLong(s);
+	}
+	
+	// コンテンツ長を設定.
+	public HttpHeader setContentLength(Object o) {
+		if(o == null) {
+			headers().remove("content-length");
+			return this;
+		}
+		headers().put("content-length", String.valueOf(o));
+		return this;
 	}
 	
 	// 1つのCookie要素を取得.
@@ -152,7 +184,7 @@ public final class HttpHeader {
 		if(cookies == null) {
 			return null;
 		}
-		return (HttpCookieValueScriptable)cookies().get(key);
+		return (HttpCookieValueScriptable)cookies.get(key);
 	}
 	
 	// cookie内容を設定.
@@ -168,6 +200,10 @@ public final class HttpHeader {
 		if(value instanceof HttpCookieValueScriptable) {
 			cookies().put(key, value);
 			return true;
+		} else if(value instanceof HttpCookieValue) {
+			cookies().put(key,
+				HttpCookieValueScriptable.getInstance(
+					(HttpCookieValue)value));
 		} else if(value != null) {
 			Object[] args;
 			if(value.getClass().isArray()) {
@@ -210,9 +246,36 @@ public final class HttpHeader {
 		return cookies.size();
 	}
 	
-    // 登録されたCookie情報をレスポンス用headerに設定.
-    // 戻り値: cookieリストが返却されます.
-    protected final void toCookiesHeader(StringBuilder out) {
+    // [cookie情報をset-cookie形式で出力.
+    protected final void toStringByGetCookie(StringBuilder out) {
+		if(cookies == null) {
+			return;
+		}
+		boolean first = true;
+		HttpCookieValueScriptable em;
+        Entry<String, Object> e;
+        Iterator<Entry<String, Object>> it = cookies.entrySet().iterator();
+        // get-cookie開始.
+    	out.append("cookie:");
+        while(it.hasNext()) {
+        	e = it.next();
+        	em = (HttpCookieValueScriptable)e.getValue();
+        	if(!first) {
+        		// firstじゃない場合セット.
+        		out.append(";");
+        	}
+        	// 1つのcookieのkey/valueを出力.
+        	em.getSrc().toStringByGetCookie(out);
+        	// firstでないことをセット.
+        	first = false;
+        }
+        // cookie: の終端をセット.
+        out.append("\r\n");
+		
+    }
+	
+    // [cookie情報をset-cookie形式で出力.
+    protected final void toStringBySetCookie(StringBuilder out) {
 		if(cookies == null) {
 			return;
 		}
@@ -222,19 +285,21 @@ public final class HttpHeader {
         while(it.hasNext()) {
         	e = it.next();
         	em = (HttpCookieValueScriptable)e.getValue();
-        	em.getSrc().toString(out);
+        	out.append("set-cookie:");
+        	em.getSrc().toStringBySetCookie(out);
         }
     }
     
     @Override
     public String toString() {
     	StringBuilder buf = new StringBuilder();
-    	toString(buf);
+    	toString(true, buf);
     	return buf.toString();
     }
     
     // ヘッダ情報を文字列取得.
-    public void toString(StringBuilder out) {
+    // response = trueの場合は、HttpResponse返却としてヘッダ出力します.
+    public void toString(boolean response, StringBuilder out) {
 		// ヘッダを展開.
     	if(headers != null) {
     		Entry<String, Object> e;
@@ -243,14 +308,22 @@ public final class HttpHeader {
     		while(it.hasNext()) {
     			e = it.next();
     			out.append(ObjectUtil.encodeURIComponent(e.getKey()))
-    				.append(": ").append(
+    				.append(":").append(
     					ObjectUtil.encodeURIComponent((String)e.getValue()))
     				.append("\r\n");
     		}
     	}
     	// cookieヘッダ.
     	if(cookies != null) {
-    		toCookiesHeader(out);
+    		// HttpResponseで出力.
+    		if(response) {
+    			// set-cookieで出力.
+    			toStringBySetCookie(out);
+    		// HttpRequestで出力.
+    		} else {
+    			// cookieでkey/value出力.
+    			toStringByGetCookie(out);
+    		}
     	}
     }
 	
@@ -339,40 +412,45 @@ public final class HttpHeader {
 			case 2: //"clearHeader"
 				object.clearHeader();
 				return null;
-			case 3: //"getContentType"
+			case 3: //"getContentLength"
+				return object.getContentLength();
+			case 4: //"getContentType"
 				return object.getContentType();
-			case 4: //"getCookie"
+			case 5: //"getCookie"
 				checkArgsKey(args);
 				return object.getCookie((String)args[0]);
-			case 5: //"getCookieKeys"
+			case 6: //"getCookieKeys"
 				return object.getCookieKeys();
-			case 6: //"getCookieSize"
+			case 7: //"getCookieSize"
 				return object.getCookieSize();
-			case 7: //"getHeader"
+			case 8: //"getHeader"
 				checkArgsKey(args);
 				return object.getHeader((String)args[0]);
-			case 8: //"getHeaderKeys"
+			case 9: //"getHeaderKeys"
 				return object.getHeaderKeys();
-			case 9: //"getHeaderSize"
+			case 10: //"getHeaderSize"
 				return object.getHeaderSize();
 			case 11: //"removeCookie"
 				checkArgsKey(args);
 				return object.removeHeader((String)args[0]);
-			case 10: //"removeHeader"
+			case 12: //"removeHeader"
 				checkArgsKey(args);
 				return object.removeHeader((String)args[0]);
-			case 12: //"setContentType"
+			case 13: //"setContentLength"
+				object.setContentLength(args[0]);
+				return null;
+			case 14: //"setContentType"
 				object.setContentType((String)args[0]);
 				return null;
-			case 13: //"setCookie"
+			case 15: //"setCookie"
 				setCookieToArgs(object, args);
 				return null;
-			case 14: //"setHeader"
+			case 16: //"setHeader"
 				checkArgsKey(args);
 				checkArgsValue(args);
 				object.setHeader((String)args[0], (String)args[1]);
 				return null;
-			case 15: //"toString"
+			case 17: //"toString"
 				return object.toString();
 			}
 			// プログラムの不具合以外にここに来ることは無い.
@@ -387,7 +465,7 @@ public final class HttpHeader {
 	    protected static final HttpHeaderScriptable LOAD_CRAC = new HttpHeaderScriptable();
 	    
 		protected HttpHeaderScriptable() {}
-		HttpHeader object = null;
+		protected HttpHeader src = null;
 		private boolean staticFlag = true;
 		
 		@Override
@@ -397,16 +475,21 @@ public final class HttpHeader {
 		
 		// 元のオブジェクトを取得.
 		public HttpHeader getSrc() {
-			return object;
+			return src;
 		}
 		
-		// new HttpStatusScriptable();
+		// new HttpHeaderScriptable();
 		@Override
 		public Scriptable newInstance(Context arg0, Scriptable arg1, Object[] arg2) {
+			return newInstance(new HttpHeader());
+		}
+		
+		// new HttpHeaderScriptable();
+		public static final HttpHeaderScriptable newInstance(HttpHeader src) {
 			// 新しいScriptableオブジェクトを生成.
 			HttpHeaderScriptable ret = new HttpHeaderScriptable();
 			// 元のオブジェクトを設定.
-			ret.object = new HttpHeader();
+			ret.src = src;
 			ret.staticFlag = false;
 			return ret;
 		}
@@ -433,7 +516,7 @@ public final class HttpHeader {
 				return null;
 			}
 			// オブジェクト管理の生成Functionを取得.
-			Object ret = object.objInsList.get(name);
+			Object ret = src.objInsList.get(name);
 			// 存在しない場合.
 			if(ret == null) {
 				// static管理のオブジェクトを取得.
@@ -442,8 +525,8 @@ public final class HttpHeader {
 				if(ret != null) {
 					// オブジェクト管理の生成Functionとして管理.
 					ret = ((AbstractRhinoFunctionInstance)ret)
-						.getInstance(object);
-					object.objInsList.put(name, ret);
+						.getInstance(src);
+					src.objInsList.put(name, ret);
 				}
 			}
 			return ret;

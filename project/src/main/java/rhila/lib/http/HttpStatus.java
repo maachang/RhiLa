@@ -24,11 +24,8 @@ public class HttpStatus {
 	private static final String[] FUNCTION_NAMES = new String[] {
 		"getHttpMessage"
 		,"getMessage"
-		,"getRedirect"
 		,"getStatus"
-		,"isRedirect"
 		,"reset"
-		,"setRedirect"
 		,"setStatus"
 	};
 	
@@ -97,7 +94,6 @@ public class HttpStatus {
 	
 	private int status;
 	private String message;
-	private String redirectURL;
 	
 	// コンストラクタ.
 	public HttpStatus() {
@@ -124,7 +120,6 @@ public class HttpStatus {
 	public void reset() {
 		this.status = 200;
 		this.message = "OK";
-		this.redirectURL = null;
 	}
 	
 	// ステータス設定.
@@ -158,33 +153,18 @@ public class HttpStatus {
 	public String getMessage() {
 		return message;
 	}
-	
-	// リダイレクトURLをセット.
-	public void setRedirect(int status, String url) {
-		setStatus(status);
-		this.redirectURL = url;
-	}
-	
-	// リダイレクト設定チェック.
-	public boolean isRedirect() {
-		return redirectURL != null;
-	}
-	
-	// リダイレクトURLを取得.
-	public String getRedirect() {
-		return redirectURL;
-	}
 		
 	// [js]HttpStatusFunctions.
 	private static final class HttpStatusFunctions
 		extends AbstractRhinoFunctionInstance {
 	    // lambda snapStart CRaC用.
 	    @SuppressWarnings("unused")
-		protected static final HttpStatusFunctions LOAD_CRAC = new HttpStatusFunctions();
+		protected static final HttpStatusFunctions LOAD_CRAC =
+			new HttpStatusFunctions();
 		
 		private int type;
 		private String typeString;
-		private HttpStatus status;
+		protected HttpStatus status;
 		
 		// コンストラクタ.
 		private HttpStatusFunctions() {}
@@ -218,20 +198,12 @@ public class HttpStatus {
 				return getStatusMessage(args[0]);
 			case 1: // getMessage.
 				return status.getMessage();
-			case 2: // getRedirect.
-				return status.getRedirect();
-			case 3: // getStatus.
+			case 2: // getStatus.
 				return status.getStatus();
-			case 4: // isRedirect.
-				return status.isRedirect();
-			case 5: // reset.
+			case 3: // reset.
 				status.reset();
 				return Undefined.instance;
-			case 6: // setRedirect.
-				status.setRedirect(
-					NumberUtil.parseInt(args[0]), String.valueOf(args[1]));
-				return Undefined.instance;
-			case 7: // setStatus.
+			case 4: // setStatus.
 				int len = args == null ? 0: args.length;
 				if(len == 0) {
 					throw new RhilaException("one parameter is required");
@@ -256,7 +228,7 @@ public class HttpStatus {
 	    protected static final HttpStatusScriptable LOAD_CRAC = new HttpStatusScriptable();
 	    
 		protected HttpStatusScriptable() {}
-		HttpStatus object = null;
+		HttpStatus src = null;
 		private boolean staticFlag = true;
 		
 		@Override
@@ -266,7 +238,7 @@ public class HttpStatus {
 		
 		// 元のオブジェクトを取得.
 		public HttpStatus getSrc() {
-			return object;
+			return src;
 		}
 		
 		// new HttpStatusScriptable();
@@ -277,17 +249,27 @@ public class HttpStatus {
 			// 引数長を取得.
 			final int len = arg2 == null || arg2.length == 0 ? 0 : arg2.length;
 			if(len == 0) {
-				ret.object = new HttpStatus();
+				ret.src = new HttpStatus();
 			} else if(len == 1) {
-				ret.object = new HttpStatus(NumberUtil.parseInt(
+				ret.src = new HttpStatus(NumberUtil.parseInt(
 					arg2[0]));
 			} else {
-				ret.object = new HttpStatus(NumberUtil.parseInt(
+				ret.src = new HttpStatus(NumberUtil.parseInt(
 					arg2[0]), String.valueOf(arg2[1]));
 			}
 			ret.staticFlag = false;
 			return ret;
 		}
+		
+		// new HttpStatusScriptable();
+		public static final HttpStatusScriptable newInstance(HttpStatus src) {
+			// 新しいScriptableオブジェクトを生成.
+			HttpStatusScriptable ret = new HttpStatusScriptable();
+			ret.src = src;
+			ret.staticFlag = false;
+			return ret;
+		}
+
 
 		@Override
 		public String getName() {
@@ -313,7 +295,7 @@ public class HttpStatus {
 				}
 			}
 			// オブジェクト管理の生成Functionを取得.
-			Object ret = object.objInsList.get(name);
+			Object ret = src.objInsList.get(name);
 			// 存在しない場合.
 			if(ret == null) {
 				// static管理のオブジェクトを取得.
@@ -322,8 +304,8 @@ public class HttpStatus {
 				if(ret != null) {
 					// オブジェクト管理の生成Functionとして管理.
 					ret = ((AbstractRhinoFunctionInstance)ret)
-						.getInstance(object);
-					object.objInsList.put(name, ret);
+						.getInstance(src);
+					src.objInsList.put(name, ret);
 				}
 			}
 			return ret;

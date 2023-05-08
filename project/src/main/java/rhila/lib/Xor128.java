@@ -228,6 +228,13 @@ public final class Xor128 {
 			return ret;
 		}
 		
+		public static final RandomScriptableObject getInstance(Xor128 src) {
+			RandomScriptableObject ret = new RandomScriptableObject();
+			ret.src = src;
+			ret.staticFlag = false;
+			return ret;
+		}
+		
 		@Override
 		public String getName() {
 			return "random";

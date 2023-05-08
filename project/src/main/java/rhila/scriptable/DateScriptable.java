@@ -316,37 +316,41 @@ public class DateScriptable extends java.util.Date
 	@Override
 	public final Scriptable newInstance(Context arg0, Scriptable arg1, Object[] arg2) {
 		try {
-			DateScriptable ret = null;
-			if(arg2.length == 0) {
-				// 空のDate.
-				ret = new DateScriptable();
-			} else if(arg2.length == 1) {
-				Object o = arg2[0];
-				if(o instanceof Date) {
-					// Date指定.
-					ret = new DateScriptable((Date)o);
-				} else if(o instanceof DateScriptable) {
-					// DateScriptable指定.
-					ret = new DateScriptable((DateScriptable)o);
-				} else if(o instanceof Number) {
-					// Number指定.
-					ret = new DateScriptable(((Number)o).longValue());
-				} else if(o instanceof String) {
-					// 文字変換.
-					ret = new DateScriptable((String)o);
-				}
-			}
-			// 複数パラメータの場合.
-			if(ret == null) {
-				ret = new DateScriptable(arg2);
-			}
-			ret.staticFlag = false;
-			return ret;
+			return newInstance(arg2);
 		} catch(RhilaException rwe) {
 			throw rwe;
 		} catch(Throwable t) {
 			throw new RhilaException(t);
 		}
+	}
+	
+	public static final DateScriptable newInstance(Object... args) {
+		DateScriptable ret = null;
+		if(args == null || args.length == 0) {
+			// 空のDate.
+			ret = new DateScriptable();
+		} else if(args.length == 1) {
+			Object o = args[0];
+			if(o instanceof Date) {
+				// Date指定.
+				ret = new DateScriptable((Date)o);
+			} else if(o instanceof DateScriptable) {
+				// DateScriptable指定.
+				ret = new DateScriptable((DateScriptable)o);
+			} else if(o instanceof Number) {
+				// Number指定.
+				ret = new DateScriptable(((Number)o).longValue());
+			} else if(o instanceof String) {
+				// 文字変換.
+				ret = new DateScriptable((String)o);
+			}
+		}
+		// 複数パラメータの場合.
+		if(ret == null) {
+			ret = new DateScriptable(args);
+		}
+		ret.staticFlag = false;
+		return ret;
 	}
 	
 	// functionリストを生成.

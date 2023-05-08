@@ -269,14 +269,18 @@ public class MapScriptable extends ScriptableObject
 	    // lambda snapStart CRaC用.
 	    protected static final MapScriptableObject LOAD_CRAC = new MapScriptableObject();
 	    
-		@SuppressWarnings({ "rawtypes", "unchecked" })
 		@Override
 		public Scriptable newInstance(Context arg0, Scriptable arg1, Object[] arg2) {
-			if(arg2 == null || arg2.length == 0) {
+			return newInstance(arg2);
+		}
+		
+		@SuppressWarnings({ "rawtypes", "unchecked" })
+		public MapScriptable newInstance(Object... args) {
+			if(args == null || args.length == 0) {
 				return new MapScriptable();
 			}
-			if(arg2.length == 1) {
-				Object o = arg2[0];
+			if(args.length == 1) {
+				Object o = args[0];
 				if(o == null) {
 					return new MapScriptable();
 				} else if(o instanceof Map) {
@@ -290,12 +294,14 @@ public class MapScriptable extends ScriptableObject
 					return new MapScriptable(oo);
 				}
 			}
-			return new MapScriptable(arg2);
+			return new MapScriptable(args);
 		}
+		
 		@Override
 		public String getName() {
 			return "Map";
 		}
+		
 		@Override
 		public String toString() {
 			return "[Map]";

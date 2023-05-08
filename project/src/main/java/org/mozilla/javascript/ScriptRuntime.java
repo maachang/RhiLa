@@ -16,6 +16,7 @@ import java.util.Arrays;
 import java.util.Locale;
 import java.util.ResourceBundle;
 import java.util.function.BiConsumer;
+
 import org.mozilla.javascript.ast.FunctionNode;
 import org.mozilla.javascript.v8dtoa.DoubleConversion;
 import org.mozilla.javascript.v8dtoa.FastDtoa;
@@ -172,9 +173,9 @@ public class ScriptRuntime {
         NativeString.init(scope, sealed);
         NativeBoolean.init(scope, sealed);
         NativeNumber.init(scope, sealed);
-        NativeDate.init(scope, sealed);
+        //NativeDate.init(scope, sealed);
         NativeMath.init(scope, sealed);
-        NativeJSON.init(scope, sealed);
+        //NativeJSON.init(scope, sealed);
 
         NativeWith.init(scope, sealed);
         NativeCall.init(scope, sealed);

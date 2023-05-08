@@ -201,24 +201,24 @@ public class HttpCookieValue {
 		return null;
 	}
 	
-	// １つのCookie要素を文字列変換.
-	@Override
-	public String toString() {
-		StringBuilder ret = new StringBuilder();
-		toString(ret);
-		return ret.toString();
+	// [cookie:]getCookieでの文字列化.
+	private final void toStringByKeyValueString(StringBuilder out) {
+        String v = value.get("value") == null ?
+            	"" : (String)value.get("value");
+        // key=value条件.
+        out.append(ObjectUtil.encodeURIComponent(key))
+            .append("=").append(ObjectUtil.encodeURIComponent(v));
 	}
 	
-	// １つのCookie要素を文字列変換.
-	protected void toString(StringBuilder out) {
+	// [cookie:]getCookieでの文字列化.
+	protected void toStringByGetCookie(StringBuilder out) {
+		toStringByKeyValueString(out);
+	}
+	
+	// [set-cookie:]setCookieでの文字列化.
+	protected void toStringBySetCookie(StringBuilder out) {
         Entry<String, Object> e;
-        String v = value.get("value") == null ?
-        	"" : (String)value.get("value");
-        // key=value条件.
-        out.append("set-cookie: ")
-        	.append(ObjectUtil.encodeURIComponent(key))
-            .append("=").append(ObjectUtil.encodeURIComponent(v));
-        v = null;
+        toStringByKeyValueString(out);
         // cookie要素を連結.
         Iterator<Entry<String, Object>> itn = value.entrySet().iterator();
         while(itn.hasNext()) {
@@ -228,19 +228,26 @@ public class HttpCookieValue {
         		continue;
         	} else if(e.getValue() instanceof Boolean) {
         		if("samesite".equals(e.getKey())) {
-        			out.append("; SameSite=Lax");            			
+        			out.append(";SameSite=Lax");            			
         		} else {
-        			out.append("; ").append(
+        			out.append(";").append(
         				ObjectUtil.encodeURIComponent(e.getKey()));
         		}
         	} else {
-        		out.append("; ").append(
+        		out.append(";").append(
         				ObjectUtil.encodeURIComponent(e.getKey()))
         			.append("=").append(
         				ObjectUtil.encodeURIComponent((String)e.getValue()));
         	}
         }
         out.append("\r\n");
+	}
+	
+	@Override
+	public String toString() {
+		StringBuilder buf = new StringBuilder();
+		toStringBySetCookie(buf);
+		return buf.toString();
 	}
 	
 	// Key取得.
@@ -380,7 +387,7 @@ public class HttpCookieValue {
 	    	new HttpCookieValueScriptable();
 	    
 		protected HttpCookieValueScriptable() {}
-		private HttpCookieValue cookieValue = null;
+		protected HttpCookieValue src = null;
 		private boolean staticFlag = true;
 		
 		@Override
@@ -390,7 +397,7 @@ public class HttpCookieValue {
 		
 		// 元のオブジェクトを取得.
 		public HttpCookieValue getSrc() {
-			return cookieValue;
+			return src;
 		}
 		
 		// new HttpCookieValueScriptable();
@@ -398,8 +405,16 @@ public class HttpCookieValue {
 		public Scriptable newInstance(Context arg0, Scriptable arg1, Object[] arg2) {
 			// 新しいScriptableオブジェクトを生成.
 			HttpCookieValueScriptable ret = new HttpCookieValueScriptable();
-			ret.cookieValue = new HttpCookieValue();
-			setArgs(ret.cookieValue, arg2);
+			ret.src = new HttpCookieValue();
+			setArgs(ret.src, arg2);
+			ret.staticFlag = false;
+			return ret;
+		}
+		
+		// new HttpCookieValueScriptable();
+		public static final HttpCookieValueScriptable getInstance(HttpCookieValue src) {
+			HttpCookieValueScriptable ret = new HttpCookieValueScriptable();
+			ret.src = src;
 			ret.staticFlag = false;
 			return ret;
 		}
@@ -416,7 +431,7 @@ public class HttpCookieValue {
 		
 		@Override
 		public Object[] getIds() {
-			return cookieValue.value.getIds();
+			return src.value.getIds();
 		}
 		
 		@Override
@@ -431,7 +446,7 @@ public class HttpCookieValue {
 				return null;
 			}
 			// オブジェクト管理の生成Functionを取得.
-			Object ret = cookieValue.objInsList.get(name);
+			Object ret = src.objInsList.get(name);
 			// 存在しない場合.
 			if(ret == null) {
 				// static管理のオブジェクトを取得.
@@ -440,8 +455,8 @@ public class HttpCookieValue {
 				if(ret != null) {
 					// オブジェクト管理の生成Functionとして管理.
 					ret = ((AbstractRhinoFunctionInstance)ret)
-						.getInstance(cookieValue);
-					cookieValue.objInsList.put(name, ret);
+						.getInstance(src);
+					src.objInsList.put(name, ret);
 				}
 			}
 			return ret;

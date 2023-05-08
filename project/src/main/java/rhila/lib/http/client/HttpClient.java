@@ -8,21 +8,24 @@ import java.io.OutputStream;
 import java.lang.reflect.Method;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.util.HashMap;
 import java.util.Map;
-
-import org.mozilla.javascript.Undefined;
 
 import rhila.RhilaException;
 import rhila.lib.ByteArrayBuffer;
 import rhila.lib.NumberUtil;
 import rhila.lib.ObjectUtil;
+import rhila.lib.http.HttpCookieValue;
+import rhila.lib.http.HttpStatus;
 import rhila.scriptable.BinaryScriptable;
-import rhila.scriptable.MapScriptable;
 
 /**
  * [同期]HttpClient.
  */
 public final class HttpClient {
+	
+    // lambda snapStart CRaC用.
+    protected static final HttpCookieValue LOAD_CRAC = new HttpCookieValue();
 
 	//
 	// [memo]
@@ -38,89 +41,29 @@ public final class HttpClient {
 	protected HttpClient() {
 	}
 	
-	// methodの整理.
-	private static final String trimMethod(Map<String, Object> option) {
-		String method = (String)option.get("method");
-		method = (method != null) ?
-			method.toUpperCase() : "GET";
-		option.put("method", method);
-		return method;
-	}
+	// Maxリトライ(15回).
+	private static int MAX_RETRY = 15;
 	
-	// bodyを文字列変換.
-	private static final String bodyString(Object body) {
-		if(ObjectUtil.isNull(body)) {
-			return null;
-		}
-		try {
-			if(body instanceof String) {
-				return (String)body;
-			} else if(body instanceof byte[]) {
-				return new String((byte[])body, "UTF8");
-			} else if(body instanceof BinaryScriptable) {
-				return new String(((BinaryScriptable)body).getRaw(), "UTF8");
-			}
-		} catch(RhilaException re) {
-			throw re;
-		} catch(Exception e) {
-			throw new RhilaException(e);
-		}
-		throw new RhilaException(
-			"The conversion target is not binary: " + body.getClass().getName());
-	}
-
-	// MethodがGETやDELETEの場合、URLに対してFormDataを付与.
-	private static final String appendUrlParams(
-		String url, Map<String, Object> option) {
-		String method = (String)option.get("method");
-		Object body = option.get("body");
-		if(!ObjectUtil.isNull(body) &&
-			("GET".equals(method) || "DELETE".equals(method))) {
-			if(url.indexOf("?") == -1) {
-				return url + "?" + bodyString(body);
-			} else {
-				return url + "&" + bodyString(body);
-			}
-		}
-		return url;
-	}
-
-	// URLとパスをマージさせる.
-	private static final String margeUrl(String url, String path) {
-		// url のプロトコルが http:// or https:// であるかチェック.
-		final int p = url.indexOf("://");
-		if(p == -1) {
-			// HTTP関連のURLでない場合はエラー.
-			throw new HttpClientException("Not in URL format: " + url);
-		}
-		// プロトコル＋ドメイン名＋ポート番号までを取得.
-		final int pp = url.indexOf("/", p + 3);
-		if(pp == -1) {
-			return url + (!path.startsWith("/") ? "/" : "") + path;
-		}
-		return url.substring(0, pp) +
-			(!path.startsWith("/") ? "/" : "") + path;
-	}
-
+	// Socketタイムアウト値(30秒).
+	private static int TIMEOUT = 30000;
+	
 	// HttpClient.
 	public static final HttpResult request(
-		String host, String path, Map<String, Object> option) {
+		String host, String path, Map<String, Object> options) {
 		String accessUrl;
 		HttpStatus state;
 		String location;
 		int cnt = 0;
 		HttpResult ret = null;
-		if(option == null) {
-			option = new HttpClientOption();
+		if(options == null) {
+			options = new HashMap<String, Object>();
 		}
-		// OptionのFix.
-		option.fix();
-		final int maxRetry = NioClientConstants.getMaxRetry();
+		String url = createURL(host, path);
 		while (true) {
 			// MethodがGETで、FormDataが存在する場合はGETのパラメータ設定.
-			accessUrl = appendUrlParams(url, option);
+			accessUrl = appendUrlParams(url, options);
 			// Httpアクセス.
-			ret = accessHttp(accessUrl, option);
+			ret = accessHttp(accessUrl, options);
 			// 処理結果のステータスを取得.
 			state = ret.getStatus();
 			// リダイレクト要求の場合.
@@ -160,7 +103,7 @@ public final class HttpClient {
 				// リダイレクト先のURL設定.
 				url = location;
 				// 規定回数を超えるリダイレクトの場合.
-				if (cnt ++ > maxRetry) {
+				if (cnt ++ > MAX_RETRY) {
 					throw new HttpClientException(
 						"Retry limit exceeded.");
 				}
@@ -174,7 +117,7 @@ public final class HttpClient {
 
 	// 接続処理.
 	private static final HttpResult accessHttp(
-		String url, HttpClientOption option) {
+		String url, Map<String, Object> options) {
 		Socket socket = null;
 		InputStream in = null;
 		OutputStream out = null;
@@ -187,11 +130,11 @@ public final class HttpClient {
 			out = new BufferedOutputStream(socket.getOutputStream());
 
 			// リクエスト送信.
-			createRequest(urlArray, out, option);
+			createRequest(urlArray, out, options);
 
 			// レスポンス受信.
 			in = new BufferedInputStream(socket.getInputStream());
-			HttpResult ret = receiveHttp(url, in, option);
+			HttpResult ret = receiveHttp(url, in, options);
 
 			out.close();
 			out = null;
@@ -234,56 +177,15 @@ public final class HttpClient {
 		}
 	}
 
-	// URLをパース.
-	private static final String[] parseUrl(String url)
-		throws IOException {
-		int b = 0;
-		int p = url.indexOf("://");
-		if (p == -1) {
-			return null;
-		}
-		String protocol = url.substring(0, p);
-		String domain = null;
-		String path = null;
-		String port = "http".equals(protocol) ?
-			"80" : "443";
-		b = p + 3;
-		p = url.indexOf(":", b);
-		int pp = url.indexOf("/", b);
-		if (p == -1) {
-			if (pp == -1) {
-				domain = url.substring(b);
-				path = "/";
-			} else {
-				domain = url.substring(b, pp);
-				path = url.substring(pp);
-			}
-		} else if (pp == -1) {
-			domain = url.substring(b, p);
-			port = url.substring(p + 1);
-			path = "/";
-		} else if (p < pp) {
-			domain = url.substring(b, p);
-			port = url.substring(p + 1, pp);
-			path = url.substring(pp);
-		} else {
-			domain = url.substring(b, p);
-			path = url.substring(p);
-		}
-		if (!NumberUtil.isNumeric(port)) {
-			throw new IOException("Port number is not a number: " +
-				port);
-		}
-		return new String[] { protocol, domain, port, path };
-	}
 
 	// ソケット生成.
 	private static final Socket createSocket(String[] urlArray)
 		throws IOException {
-		return NioClientSocket.create(
+		
+		return RhilaSocketFactory.create(
 			"https".equals(urlArray[0]), urlArray[1],
 			NumberUtil.parseInt(urlArray[2]),
-			NioClientConstants.getTimeout());
+			TIMEOUT);
 	}
 
 	// 文字コードを取得.
@@ -297,7 +199,7 @@ public final class HttpClient {
 
 	// HTTPリクエストを作成.
 	private static final void createRequest(
-		String[] urlArray, OutputStream out, HttpClientOption option)
+		String[] urlArray, OutputStream out, Map<String, Object> options)
 		throws IOException {
 		Header header = option.getHeaders();
 		Method method = option.getMethod();

@@ -7,7 +7,6 @@ import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 
 import rhila.CRaCDefine;
-import rhila.RhilaException;
 import rhila.lib.LibGetFunction;
 import rhila.lib.http.HttpGetFunction;
 import rhila.scriptable.RhilaWrapper;
@@ -21,7 +20,7 @@ public class Global extends ImporterTopLevel {
     private static final long serialVersionUID = 6802578607688922051L;
     
     // シングルトン.
-    public static final Global SNGL = new Global();
+    protected static final Global SNGL = new Global();
     
     // Lambda snapStart用 CRaC呼び出し.
     static {
@@ -42,9 +41,6 @@ public class Global extends ImporterTopLevel {
     // rhinoでの現状の最大サポート.
     private static final int SCRIPT_LANGUAGE_VERSION = Context.VERSION_ES6;
     
-    // 初期設定フラグ.
-    private boolean initFlag = false;
-    
     // context.
     private Context ctx = null;
     
@@ -53,9 +49,6 @@ public class Global extends ImporterTopLevel {
     
     // 新しいglobalオブジェクトを取得.
     public static final Global getInstance() {
-    	if(!SNGL.initFlag) {
-    		throw new RhilaException("Global is not initialized."); 
-    	}
     	return SNGL;
     }
     
@@ -92,12 +85,6 @@ public class Global extends ImporterTopLevel {
     
     // 初期化処理.
     private void initGlobal(Context ctx) {
-        // 初期化済み.
-        if(initFlag) {
-            // エラー出力.
-            throw new RhilaException(
-                "The global definition has already been initialized.");
-        }
         // processEnvが設定されていない
         if(env == null) {
             // 新規作成.
@@ -132,9 +119,6 @@ public class Global extends ImporterTopLevel {
         
         // 変数定義.
         ScriptableObject.putConstProperty(this, "global", this);
-        
-        // 初期化済み.
-        initFlag = true;
     }
     
     // 利用可能なGlobalFunction群登録リスト.

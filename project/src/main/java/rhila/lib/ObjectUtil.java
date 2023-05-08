@@ -34,8 +34,14 @@ public final class ObjectUtil {
 	
 	// urlエンコード.
 	public static final String encodeURIComponent(String s) {
+		return encodeURIComponent(s, null);
+	}
+	
+	// urlエンコード.
+	public static final String encodeURIComponent(String s, String c) {
+		c = c == null ? "UTF8": c;
 		try {
-			return URLEncoder.encode(s, "UTF8");
+			return URLEncoder.encode(s, c);
 		} catch(Exception e) {
 			throw new RhilaException(e);
 		}
@@ -43,8 +49,14 @@ public final class ObjectUtil {
 	
 	// urlデコード.
 	public static final String decodeURIComponent(String s) {
+		return decodeURIComponent(s, null);
+	}
+	
+	// urlデコード.
+	public static final String decodeURIComponent(String s, String c) {
+		c = c == null ? "UTF8": c;
 		try {
-			return URLDecoder.decode(s, "UTF8");
+			return URLDecoder.decode(s, c);
 		} catch(Exception e) {
 			throw new RhilaException(e);
 		}

@@ -14,7 +14,6 @@ import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.math.BigInteger;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -391,11 +390,11 @@ public class NativeJavaObject implements Scriptable, SymbolScriptable, Wrapper, 
                     return 3;
                 } else if (to == ScriptRuntime.StringClass) {
                     return 4;
-                } else if (to == ScriptRuntime.DateClass) {
-                    if (fromObj instanceof NativeDate) {
-                        // This is a native date to java date conversion
-                        return 1;
-                    }
+                //} else if (to == ScriptRuntime.DateClass) {
+                //    if (fromObj instanceof NativeDate) {
+                //        // This is a native date to java date conversion
+                //        return 1;
+                //    }
                 } else if (to.isInterface()) {
 
                     if (fromObj instanceof NativeFunction) {
@@ -605,10 +604,10 @@ public class NativeJavaObject implements Scriptable, SymbolScriptable, Wrapper, 
                     return coerceToNumber(type, value);
                 } else if (type.isInstance(value)) {
                     return value;
-                } else if (type == ScriptRuntime.DateClass && value instanceof NativeDate) {
-                    double time = ((NativeDate) value).getJSTimeValue();
-                    // XXX: This will replace NaN by 0
-                    return new Date((long) time);
+                //} else if (type == ScriptRuntime.DateClass && value instanceof NativeDate) {
+                //    double time = ((NativeDate) value).getJSTimeValue();
+                //    // XXX: This will replace NaN by 0
+                //    return new Date((long) time);
                 } else if (type.isArray() && value instanceof NativeArray) {
                     // Make a new java array, and coerce the JS array components
                     // to the target (component) type.

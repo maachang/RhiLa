@@ -410,15 +410,19 @@ public class ListScriptable
 	    public static final ListScriptableObject LOAD_CRAC =
 	    	new ListScriptableObject();
 		
-		@SuppressWarnings("rawtypes")
 		@Override
 		public Scriptable newInstance(
 			Context arg0, Scriptable arg1, Object[] arg2) {
-			if(arg2 == null || arg2.length == 0) {
+			return newInstance(arg2);
+		}
+		
+		@SuppressWarnings("rawtypes")
+		public static final ListScriptable newInstance(Object... args) {
+			if(args == null || args.length == 0) {
 				return new ListScriptable();
 			}
-			if(arg2.length == 1) {
-				Object o = arg2[0];
+			if(args.length == 1) {
+				Object o = args[0];
 				if(o == null) {
 					return new ListScriptable();
 				} else if(o instanceof Number) {
@@ -432,9 +436,9 @@ public class ListScriptable
 					return new ListScriptable(oo);
 				}
 			}
-			return new ListScriptable(arg2);
-
+			return new ListScriptable(args);
 		}
+		
 		@Override
 		public String getName() {
 			return "List";

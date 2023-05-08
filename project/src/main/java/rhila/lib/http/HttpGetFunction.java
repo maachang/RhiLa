@@ -24,6 +24,7 @@ public class HttpGetFunction implements RhinoGetFunction {
 		instanceList = new ArrayMap<String, Scriptable>(
 			"HttpCookieValue", HttpCookieValueScriptable.LOAD_CRAC
 			,"HttpHeader", HttpHeaderScriptable.LOAD_CRAC
+			,"HttpRequest", HttpRequest.LOAD_CRAC
 			,"HttpStatus", HttpStatusScriptable.LOAD_CRAC
 			,"MimeType", MimeTypeScriptable.LOAD_CRAC
 		);
@@ -31,6 +32,7 @@ public class HttpGetFunction implements RhinoGetFunction {
 		// lambda snapStart CRaC用.
 		HttpCookieValue.LOAD_CRAC.getClass();
 		HttpHeader.LOAD_CRAC.getClass();
+		HttpRequest.LOAD_CRAC.getClass();
 		HttpStatus.LOAD_CRAC.getClass();
 		MimeType.LOAD_CRAC.getClass();
 	}

@@ -16,11 +16,15 @@ public final class CRaCDefine {
 	// このオブジェクト自体の定義..
 	public static final CRaCDefine LOAD_CRAC = new CRaCDefine();
 	
+	// runtimeJava(よく使うJavaオブジェクト).
+	protected static RuntimeJavaCRaCDefine RUNTIME_JAVA =
+		RuntimeJavaCRaCDefine.LOAD_CRAC;
+	
 	// Global.
-	protected Global GLOBAL = Global.SNGL;
+	protected static Global GLOBAL = Global.getInstance();
 	
 	// RhilaException.
-	protected RhilaException RHILA_EXCEPTION = new RhilaException();
+	protected static RhilaException RHILA_EXCEPTION = new RhilaException();
 	
 	// Core用LoadFunctions.
 	protected static final CoreGetFunction CORE_GET_FUNCTION =

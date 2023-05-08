@@ -105,15 +105,19 @@ public class LowerKeyMapScriptable extends MapScriptable {
 	    public static final LowerKeyMapScriptableObject LOAD_CRAC =
 	    	new LowerKeyMapScriptableObject();
 		
-		@SuppressWarnings({ "rawtypes", "unchecked" })
 		@Override
 		public Scriptable newInstance(
 			Context arg0, Scriptable arg1, Object[] arg2) {
-			if(arg2 == null || arg2.length == 0) {
+			return newInstance(arg2);
+		}
+		
+		@SuppressWarnings({ "rawtypes", "unchecked" })
+		public static final LowerKeyMapScriptable newInstance(Object... args) {
+			if(args == null || args.length == 0) {
 				return new LowerKeyMapScriptable();
 			}
-			if(arg2.length == 1) {
-				Object o = arg2[0];
+			if(args.length == 1) {
+				Object o = args[0];
 				if(o == null) {
 					return new LowerKeyMapScriptable();
 				} else if(o instanceof Map) {
@@ -127,12 +131,14 @@ public class LowerKeyMapScriptable extends MapScriptable {
 					return new LowerKeyMapScriptable(oo);
 				}
 			}
-			return new LowerKeyMapScriptable(arg2);
+			return new LowerKeyMapScriptable(args);
 		}
+		
 		@Override
 		public String getName() {
 			return "LowerKeyMap";
 		}
+		
 		@Override
 		public String toString() {
 			return "[LowerKeyMap]";

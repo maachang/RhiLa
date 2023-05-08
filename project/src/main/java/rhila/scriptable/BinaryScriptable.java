@@ -88,6 +88,16 @@ public class BinaryScriptable implements RhinoScriptable<byte[]> {
 		return binary;
 	}
 	
+	// バイナリを取得.
+	public byte[] toByteArray() {
+		return binary;
+	}
+	
+	// バイナリサイズを取得.
+	public int size() {
+		return binary.length;
+	}
+	
 	@Override
 	public Object get(int arg0, Scriptable arg1) {
 		if(arg0 < 0 || arg0 >= binary.length) {
@@ -132,7 +142,7 @@ public class BinaryScriptable implements RhinoScriptable<byte[]> {
 	// function取得.
 	private final Object getFunction(String name) {
 		if("length".equals(name)) {
-			return binary.length;
+			return size();
 		}
 		// オブジェクト管理の生成Functionを取得.
 		Object ret = objInsList.get(name);
@@ -303,6 +313,19 @@ public class BinaryScriptable implements RhinoScriptable<byte[]> {
 			}
 			throw new RhilaException("Argument not valid");		
 		}
+		
+		public static final BinaryScriptable newInstance(Number src) {
+			return new BinaryScriptable(src.intValue());
+		}
+		
+		public static final BinaryScriptable newInstance(String src) {
+			return new BinaryScriptable(src);
+		}
+		
+		public static final BinaryScriptable newInstance(byte[] src) {
+			return new BinaryScriptable(src);
+		}
+		
 		@Override
 		public String getName() {
 			return "Binary";
