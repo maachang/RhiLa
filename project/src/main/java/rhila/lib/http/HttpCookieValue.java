@@ -60,15 +60,6 @@ public class HttpCookieValue {
 		set(key, value, options);
 	}
 	
-	// valueの解釈.
-	private static final String valueString(Object value) {
-		if(value instanceof Date) {
-			return DateUtil.toRfc822((Date)value);
-		} else {
-			return String.valueOf(value);
-		}
-	}
-	
 	// cookie内容 "key=value" の要素をパース.
 	// out {"key": "value"} がセットされます.
 	// value "key=value" のような条件を設定します.
@@ -83,9 +74,18 @@ public class HttpCookieValue {
 	    }
 	}
 	
+	// valueの解釈.
+	private static final String valueString(Object value) {
+		if(value instanceof Date) {
+			return DateUtil.toRfc822((Date)value);
+		} else {
+			return String.valueOf(value);
+		}
+	}
+	
 	// cookieのvalue内容をパース.
 	//   value="value; Max-Age=2592000; Secure;"
-	// ※必ず先頭文字は "value;" 必須.
+	//   ※必ず先頭文字は "value;" 必須.
 	// または
 	//   value={value: value, "Max-Age": 2592000, Secure: true}
 	// のような感じで設定します.
@@ -121,9 +121,15 @@ public class HttpCookieValue {
         }
         return null;
 	}
-		
+	
 	// cookieセット.
-	public void set(String key, Object value) {
+	// key cookieKey名を設定します.
+	// value: "value; Max-Age=2592000; Secure;" or
+	//        {value: value, "Max-Age": 2592000, Secure: true}
+	//        のような形式を設定します.
+	// options ["Max-Age", "2592000", "Secure", "true"]
+	//        のような形式を設定します.
+	public void set(String key, Object value, Object... options) {
 		if(!ObjectUtil.useString(key)) {
 			throw new RhilaException("key does not exist.");
 		}
@@ -132,19 +138,8 @@ public class HttpCookieValue {
 			v = new LowerKeyMapScriptable();
 			v.put("value", "");
 		} else {
-			v.put(key, valueString(value));
+			v.put("value", valueString(value));
 		}
-		this.key = key;
-		this.value = v;
-	}
-	
-	// cookieセット.
-	public void set(String key, Object value, Object... options) {
-		if(!ObjectUtil.useString(key)) {
-			throw new RhilaException("key does not exist.");
-		}
-		LowerKeyMapScriptable v = new LowerKeyMapScriptable();
-		v.put("value", valueString(value));
 		final int len = options == null ? 0 : options.length;
 		for(int i = 0; i < len; i += 2) {
 			v.put(String.valueOf(options[i]),

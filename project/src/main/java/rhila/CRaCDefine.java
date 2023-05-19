@@ -26,6 +26,9 @@ public final class CRaCDefine {
 	// RhilaException.
 	protected static RhilaException RHILA_EXCEPTION = new RhilaException();
 	
+	// RhilaConstants.
+	protected static RhilaConstants RHILA_CONSTANTS = RhilaConstants.LOAD_CRAC;
+	
 	// Core用LoadFunctions.
 	protected static final CoreGetFunction CORE_GET_FUNCTION =
 		CoreGetFunction.LOAD_CRAC;

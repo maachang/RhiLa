@@ -1,7 +1,11 @@
 package rhila.lib.http;
 
 import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 
 import org.mozilla.javascript.Context;
@@ -9,6 +13,7 @@ import org.mozilla.javascript.Scriptable;
 
 import rhila.RhilaException;
 import rhila.lib.ArrayMap;
+import rhila.lib.JsValidate;
 import rhila.lib.NumberUtil;
 import rhila.lib.ObjectUtil;
 import rhila.lib.http.HttpCookieValue.HttpCookieValueScriptable;
@@ -34,6 +39,7 @@ public final class HttpHeader {
 		"clear"
 		,"clearCookie"
 		,"clearHeader"
+		,"getCharset"
 		,"getContentLength"
 		,"getContentType"
 		,"getCookie"
@@ -42,6 +48,7 @@ public final class HttpHeader {
 		,"getHeader"
 		,"getHeaderKeys"
 		,"getHeaderSize"
+		,"getMimeType"
 		,"removeCookie"
 		,"removeHeader"
 		,"setContentLength"
@@ -103,6 +110,14 @@ public final class HttpHeader {
 		cookies = null;
 	}
 	
+	// ヘッダが存在するかチェック.
+	public boolean isHeader(String key) {
+		if(headers == null) {
+			return false;
+		}
+		return headers.containsKey(key);
+	}
+	
 	// ヘッダ取得.
 	public String getHeader(String key) {
 		if(headers == null) {
@@ -142,19 +157,59 @@ public final class HttpHeader {
 		return headers.size();
 	}
 	
+	// コンテンツタイプが存在するかチェック.
+	public boolean isContentType() {
+		return isHeader("content-type");
+	}
+	
 	// コンテンツタイプを取得.
 	public String getContentType() {
+		if(headers == null) {
+			return null;
+		}
 		return (String)headers.get("content-type");
 	}
 	
 	// コンテンツタイプを設定.
 	public HttpHeader setContentType(String value) {
+		return setContentType(value, null);
+	}
+	
+	// コンテンツタイプを設定.
+	public HttpHeader setContentType(String value, String charset) {
 		if(value == null) {
 			headers().remove("content-type");
 			return this;
+		} else if(charset != null) {
+			headers().put("content-type", value +
+				";charset=" + charset);
+		} else {
+			headers().put("content-type", value);
 		}
-		headers().put("content-type", value);
 		return this;
+	}
+	
+	// ContentTypeに設定されているMimeTypeを返却.
+	public String getMimeType() {
+		String contentType = getContentType();
+		if(contentType == null) {
+			return null;
+		}
+		int p = contentType.indexOf(";");
+		if(p != -1) {
+			return contentType.substring(0, p).trim();
+		}
+		return null;
+	}
+	
+	// ContentTypeに設定されているCharsetを返却.
+	public String getCharset() {
+		return HttpUtil.getContentTypeToCharset(getContentType());
+	}
+	
+	// コンテンツ長を取得.
+	public boolean isContentLength() {
+		return isHeader("content-length");
 	}
 	
 	// コンテンツ長を取得.
@@ -179,12 +234,92 @@ public final class HttpHeader {
 		return this;
 	}
 	
+	// LambdaURLFunction用のHttpHeader取得.
+	protected Map<String, String> toHeaderMap() {
+		Map<String, String> ret = new HashMap<String, String>();
+		if(headers == null) {
+			return ret; 
+		}
+		Entry<String, Object> e;
+		Iterator<Entry<String, Object>> it =
+			headers.entrySet().iterator();
+		while(it.hasNext()) {
+			e = it.next();
+			ret.put(e.getKey(), (String)e.getValue());
+		}
+		return ret;
+	}
+	
+	// 1つのCookie要素を取得.
+	public boolean isCookie(String key) {
+		if(cookies == null) {
+			return false;
+		}
+		return cookies.containsKey(key);
+	}
+	
 	// 1つのCookie要素を取得.
 	public HttpCookieValueScriptable getCookie(String key) {
 		if(cookies == null) {
 			return null;
 		}
 		return (HttpCookieValueScriptable)cookies.get(key);
+	}
+	
+	// cookie内容を文字列でセット.
+	// cookieKeyMode == trueの場合
+	//   set-cookie: key=value; Max-Age=2592000; Secure;
+	//   のヘッダ条件に対して以下のvalueを設定します.
+	//     stringValue="key=value; Max-Age=2592000; Secure;"
+	// cookieKeyMode == falseの場合
+	//   cookie: key=value; key=value; key=value;
+	//   のヘッダ条件に対して以下のvalueを設定します.
+	//     stringValue="key=value; key=value; key=value; ...."
+	public boolean setCookie(boolean cookieKeyMode, String stringValue) {
+		// (httpResponse)set-cookieの場合.
+		if(cookieKeyMode) {
+			// stringValue="key=value; Max-Age=2592000; Secure;"
+			int p = stringValue.indexOf("=");
+			if(p == -1) {
+				throw new RhilaException(
+					"Not a set-cookie header value condition: " +
+						stringValue);
+			}
+			return setCookie(
+				ObjectUtil.decodeURIComponent(
+					stringValue.substring(0, p).trim()),
+				ObjectUtil.decodeURIComponent(
+					stringValue.substring(p + 1).trim()));
+		// (httpRequest)cookieの場合.
+		} else {
+			// stringValue="key=value; key=value; key=value; ...."
+			boolean ret = false;
+			boolean end = false;
+			int b = 0, p, pp;
+			while(true) {
+				// key=value条件の終端が存在しない場合..
+				if((p = stringValue.indexOf(";", b)) == -1) {
+					end = true;
+					p = stringValue.length();
+				}
+				ret = true;
+				// key=valueの分離条件を取得.
+				if((pp = stringValue.indexOf("=", b)) == -1) {
+					throw new RhilaException(
+						"Failed to get key=value: " + stringValue);
+				}
+				// 条件セット.
+				setCookie(
+					ObjectUtil.decodeURIComponent(
+						stringValue.substring(b, pp).trim()),
+					ObjectUtil.decodeURIComponent(
+						stringValue.substring(pp + 1, p).trim()));
+				if(end) {
+					return ret;
+				}
+				b = p + 1;
+			}
+		}
 	}
 	
 	// cookie内容を設定.
@@ -208,10 +343,11 @@ public final class HttpHeader {
 			Object[] args;
 			if(value.getClass().isArray()) {
 				final int len = Array.getLength(value);
-				args = new Object[len];
-				System.arraycopy(value, 0, args, 0, len);
+				args = new Object[len + 1];
+				args[0] = key;
+				System.arraycopy(value, 0, args, 1, len);
 			} else {
-				args = new Object[] { value };
+				args = new Object[] { key, value };
 			}
 			Object v = HttpCookieValueScriptable
 				.LOAD_CRAC.newInstance(null, null, args);
@@ -246,8 +382,66 @@ public final class HttpHeader {
 		return cookies.size();
 	}
 	
+	// LambdaURLFunction用のSetCookie用.
+	public List<String> toSetCookieArray() {
+		List<String> ret = new ArrayList<String>();
+		if(cookies == null) {
+			return ret;
+		}
+		Entry<String, Object> e;
+		Iterator<Entry<String, Object>> it =
+			cookies.entrySet().iterator();
+		while(it.hasNext()) {
+			e = it.next();
+			ret.add(e.getValue().toString());
+		}
+		return ret;
+	}
+    
+    @Override
+    public String toString() {
+    	return toString(true);
+    }
+    
+    public String toString(boolean response) {
+    	StringBuilder buf = new StringBuilder();
+    	toString(response, buf);
+    	return buf.toString();
+    }
+    
+    // ヘッダ情報を文字列取得.
+    // response = trueの場合は、HttpResponse返却としてヘッダ出力します.
+    public void toString(boolean response, StringBuilder out) {
+		// ヘッダを展開.
+    	if(headers != null) {
+    		Entry<String, Object> e;
+    		Iterator<Entry<String, Object>> it =
+    			headers.entrySet().iterator();
+    		while(it.hasNext()) {
+    			e = it.next();
+    			out.append(ObjectUtil.encodeURIComponent(e.getKey()))
+    				.append(":").append(
+    					encodeURIComponentValue((String)e.getValue()));
+    			//out.append(e.getKey()).append(":").append(e.getValue());
+    			out.append("\r\n");
+    		}
+    	}
+    	// cookieヘッダ.
+    	if(cookies != null) {
+    		// HttpResponseで出力.
+    		if(response) {
+    			// set-cookieで出力.
+    			toStringBySetCookie(out);
+    		// HttpRequestで出力.
+    		} else {
+    			// cookieでkey/value出力.
+    			toStringByGetCookie(out);
+    		}
+    	}
+    }
+    
     // [cookie情報をset-cookie形式で出力.
-    protected final void toStringByGetCookie(StringBuilder out) {
+    private final void toStringByGetCookie(StringBuilder out) {
 		if(cookies == null) {
 			return;
 		}
@@ -275,7 +469,7 @@ public final class HttpHeader {
     }
 	
     // [cookie情報をset-cookie形式で出力.
-    protected final void toStringBySetCookie(StringBuilder out) {
+    private final void toStringBySetCookie(StringBuilder out) {
 		if(cookies == null) {
 			return;
 		}
@@ -290,66 +484,33 @@ public final class HttpHeader {
         }
     }
     
-    @Override
-    public String toString() {
-    	StringBuilder buf = new StringBuilder();
-    	toString(true, buf);
+    // valueをカンマ単位でencodeURIComponentする.
+    private static final String encodeURIComponentValue(String value) {
+    	StringBuilder buf = new StringBuilder((int)(value.length() * 1.5d));
+    	int p, b = 0, c = 0;
+    	while((p = value.indexOf(",", b)) != -1) {
+    		if(c != 0) {
+        		buf.append(",");
+    		} else {
+    			c = 1;
+    		}
+    		buf.append(ObjectUtil.encodeURIComponent(
+    			value.substring(b, p).trim()));
+    		b = p + 1;
+    	}
+    	if(b + 1 != value.length()) {
+    		if(c != 0) {
+	    		buf.append(",");
+	    	}
+			buf.append(ObjectUtil.encodeURIComponent(
+	    		value.substring(b).trim()));
+    	}
     	return buf.toString();
     }
-    
-    // ヘッダ情報を文字列取得.
-    // response = trueの場合は、HttpResponse返却としてヘッダ出力します.
-    public void toString(boolean response, StringBuilder out) {
-		// ヘッダを展開.
-    	if(headers != null) {
-    		Entry<String, Object> e;
-    		Iterator<Entry<String, Object>> it =
-    			headers.entrySet().iterator();
-    		while(it.hasNext()) {
-    			e = it.next();
-    			out.append(ObjectUtil.encodeURIComponent(e.getKey()))
-    				.append(":").append(
-    					ObjectUtil.encodeURIComponent((String)e.getValue()))
-    				.append("\r\n");
-    		}
-    	}
-    	// cookieヘッダ.
-    	if(cookies != null) {
-    		// HttpResponseで出力.
-    		if(response) {
-    			// set-cookieで出力.
-    			toStringBySetCookie(out);
-    		// HttpRequestで出力.
-    		} else {
-    			// cookieでkey/value出力.
-    			toStringByGetCookie(out);
-    		}
-    	}
-    }
-	
-	// keyチェック.
-	private static final void checkArgsKey(Object[] args) {
-		if(args == null || args.length < 1) {
-			throw new RhilaException("key is not set.");
-		}
-		if(!(args[0] instanceof String)) {
-			throw new RhilaException("key must be a string.");
-		}
-	}
-	
-	// key, Valueチェック.
-	private static final void checkArgsValue(Object[] args) {
-		if(args == null || args.length < 2) {
-			throw new RhilaException("value is not set.");
-		}
-		if(!(args[1] instanceof String)) {
-			throw new RhilaException("value must be a string.");
-		}
-	}
 	
 	// args配列からcookie設定.
 	private static final void setCookieToArgs(HttpHeader obj, Object[] args) {
-		checkArgsKey(args);
+		JsValidate.noArgsKeyToTypeError("string", args);
 		if(args.length < 2) {
 			throw new RhilaException("key, value setting is required.");
 		}
@@ -372,7 +533,8 @@ public final class HttpHeader {
 		extends AbstractRhinoFunctionInstance {
 	    // lambda snapStart CRaC用.
 		@SuppressWarnings("unused")
-		protected static final HttpHeaderFunctions LOAD_CRAC = new HttpHeaderFunctions();
+		protected static final HttpHeaderFunctions LOAD_CRAC =
+			new HttpHeaderFunctions();
 		
 		private int type;
 		private String typeString;
@@ -412,45 +574,57 @@ public final class HttpHeader {
 			case 2: //"clearHeader"
 				object.clearHeader();
 				return null;
-			case 3: //"getContentLength"
+			case 3: //"getCharset"
+				return object.getCharset();
+			case 4: //"getContentLength"
 				return object.getContentLength();
-			case 4: //"getContentType"
+			case 5: //"getContentType"
 				return object.getContentType();
-			case 5: //"getCookie"
-				checkArgsKey(args);
+			case 6: //"getCookie"
+				JsValidate.noArgsKeyToTypeError("string", args);
 				return object.getCookie((String)args[0]);
-			case 6: //"getCookieKeys"
+			case 7: //"getCookieKeys"
 				return object.getCookieKeys();
-			case 7: //"getCookieSize"
+			case 8: //"getCookieSize"
 				return object.getCookieSize();
-			case 8: //"getHeader"
-				checkArgsKey(args);
+			case 9: //"getHeader"
+				JsValidate.noArgsKeyToTypeError("string", args);
 				return object.getHeader((String)args[0]);
-			case 9: //"getHeaderKeys"
+			case 10: //"getHeaderKeys"
 				return object.getHeaderKeys();
-			case 10: //"getHeaderSize"
+			case 11: //"getHeaderSize"
 				return object.getHeaderSize();
-			case 11: //"removeCookie"
-				checkArgsKey(args);
+			case 12: //"getMimeType"
+				return object.getMimeType();
+			case 13: //"removeCookie"
+				JsValidate.noArgsKeyToTypeError("string", args);
 				return object.removeHeader((String)args[0]);
-			case 12: //"removeHeader"
-				checkArgsKey(args);
+			case 14: //"removeHeader"
+				JsValidate.noArgsKeyToTypeError("string", args);
 				return object.removeHeader((String)args[0]);
-			case 13: //"setContentLength"
+			case 15: //"setContentLength"
 				object.setContentLength(args[0]);
 				return null;
-			case 14: //"setContentType"
-				object.setContentType((String)args[0]);
+			case 16: //"setContentType"
+				JsValidate.noArgsToError(args);
+				if(args.length == 1) {
+					JsValidate.noArgsStringToError(0, args);
+					object.setContentType((String)args[0]);
+				} else {
+					JsValidate.noArgsStringToError(0, args);
+					JsValidate.noArgsStringToError(1, args);
+					object.setContentType((String)args[0], (String)args[1]);
+				}
 				return null;
-			case 15: //"setCookie"
+			case 17: //"setCookie"
 				setCookieToArgs(object, args);
 				return null;
-			case 16: //"setHeader"
-				checkArgsKey(args);
-				checkArgsValue(args);
+			case 18: //"setHeader"
+				JsValidate.noArgsKeyToTypeError("string", args);
+				JsValidate.noArgsValueToTypeError("string", args);
 				object.setHeader((String)args[0], (String)args[1]);
 				return null;
-			case 17: //"toString"
+			case 19: //"toString"
 				return object.toString();
 			}
 			// プログラムの不具合以外にここに来ることは無い.

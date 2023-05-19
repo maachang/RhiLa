@@ -146,4 +146,29 @@ public class HttpUtil {
 		}
 		return ret;
 	}
+	
+	// content-typeに対する文字コードを取得.
+	public static final String getContentTypeToCharset(String contentType) {
+		if(contentType == null) {
+			return null;
+		}
+		int p, pp;
+		p = contentType.indexOf(";");
+		if(p == -1) {
+			return null;
+		}
+		p = contentType.indexOf("charset", p + 1);
+		if(p == -1) {
+			return null;
+		}
+		p = contentType.indexOf("=", p + 7);
+		if(p == -1) {
+			return null;
+		}
+		pp = contentType.indexOf(";", p + 1);
+		if(pp == -1) {
+			return contentType.substring(p + 1).trim();
+		}
+		return contentType.substring(p + 1, pp).trim();
+	}
 }

@@ -44,6 +44,9 @@ public class Global extends ImporterTopLevel {
     // context.
     private Context ctx = null;
     
+    // lambda用Context.
+    private com.amazonaws.services.lambda.runtime.Context lambdaCtx;
+    
     // env定義.
     private ProcessEnv env;
     
@@ -69,6 +72,19 @@ public class Global extends ImporterTopLevel {
     	this.env = env;
         ScriptableObject.deleteProperty(this, "env");
         ScriptableObject.putConstProperty(this, "env", env);
+        return this;
+    }
+    
+    // lambda用Contextを取得.
+    public com.amazonaws.services.lambda.runtime.Context
+    	getLambdaContext() {
+    	return lambdaCtx;
+    }
+    
+    // lambda用Contextを設定.
+    public Global setLambdaContext(
+    	com.amazonaws.services.lambda.runtime.Context lambdaCtx) {
+    	this.lambdaCtx = lambdaCtx;
         return this;
     }
     

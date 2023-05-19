@@ -26,8 +26,13 @@ public final class RhilaSocketFactory {
 	public static final RhilaSocketFactory LOAD_CRAC =
 		new RhilaSocketFactory();
 
+	// cacertsファイルのパスワード.
 	private static final char[] TRUST_PASS = "changeit".toCharArray();
+	
+	// factory生成フラグ.
 	private static volatile boolean sslSocketFactoryFlag = false;
+	
+	// sslSocketFactory実態.
 	private static SocketFactory sslSocketFactory = null;
 	
 	// InputStreamからBinaryを取得.

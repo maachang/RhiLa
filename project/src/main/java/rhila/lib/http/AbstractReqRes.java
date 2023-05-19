@@ -2,6 +2,7 @@ package rhila.lib.http;
 
 import rhila.RhilaException;
 import rhila.lib.Base64;
+import rhila.lib.JsValidate;
 import rhila.lib.Json;
 import rhila.lib.http.HttpHeader.HttpHeaderScriptable;
 import rhila.scriptable.AbstractRhinoFunction;
@@ -9,11 +10,10 @@ import rhila.scriptable.BinaryScriptable;
 import rhila.scriptable.BinaryScriptable.BinaryScriptableObject;
 
 /**
- * HttpRequest/HttpResponse共通処理.
+ * HttpRequest/HttpResponse共通部分の処理.
  */
 @SuppressWarnings("unchecked")
-abstract class AbstractHttpIoCommon<T>
-	extends AbstractRhinoFunction {
+abstract class AbstractReqRes<T> extends AbstractRhinoFunction {
 	
 	// HTTPバージョン.
 	protected static final String HTTP_VERSION = "HTTP/";
@@ -74,6 +74,17 @@ abstract class AbstractHttpIoCommon<T>
 		return Json.decode(body.toString());
 	}
 	
+	// body設定内容をクリア.
+	public T clearBody() {
+		// binaryをクリア.
+		this.body = null;
+		// content-lengthをクリア.
+		this.header.getSrc().removeHeader("content-length");
+		// content-typeをクリア.
+		this.header.getSrc().removeHeader("content-type");
+		return (T)this;
+	}
+	
 	// bodyをセット.
 	public T setBody(String body) {
 		return setBody(body, null);
@@ -81,9 +92,7 @@ abstract class AbstractHttpIoCommon<T>
 	
 	// bodyをセット.
 	public T setBody(String body, String mimeType) {
-		if(body == null) {
-			checkArgs(null);
-		}
+		JsValidate.noArgsToError(body);
 		// binaryをセット.
 		this.body = BinaryScriptableObject.newInstance(body);
 		// content-lengthをセット.
@@ -102,9 +111,7 @@ abstract class AbstractHttpIoCommon<T>
 	
 	// bodyをセット.
 	public T setBody(byte[] body, String mimeType) {
-		if(body == null) {
-			checkArgs(null);
-		}
+		JsValidate.noArgsToError(body);
 		// binaryをセット.
 		this.body = BinaryScriptableObject.newInstance(body);
 		// content-lengthをセット.
@@ -118,9 +125,7 @@ abstract class AbstractHttpIoCommon<T>
 	
 	// json内容を設定.
 	public T setBodyToJSON(Object json) {
-		if(json == null) {
-			checkArgs(null);
-		}
+		JsValidate.noArgsToError(body);
 		setBody(Json.encode(json), MimeType.JSON);
 		return (T)this;
 	}
@@ -132,9 +137,7 @@ abstract class AbstractHttpIoCommon<T>
 	
 	// base64形式のbodyをセット.
 	public T setBodyToBase64(String body, String mimeType) {
-		if(body == null) {
-			checkArgs(null);
-		}
+		JsValidate.noArgsToError(body);
 		// binaryをセット.
 		this.body = BinaryScriptableObject.newInstance(
 			Base64.decode(body));
@@ -146,23 +149,7 @@ abstract class AbstractHttpIoCommon<T>
 		}
 		return (T)this;
 	}
-	
-	// argsが存在しない場合エラー.
-	protected static final void checkArgs(Object[] args) {
-		if(args == null || args.length == 0) {
-			throw new RhilaException("Argument not set.");
-		}
-	}
-	
-	// argsの設定位置が文字情報ではない場合.
-	protected static final void checkArgsString(
-		Object[] args, int no) {
-		if(!(args[no] instanceof String)) {
-			throw new RhilaException(
-				"The " + no + "th argument is not a string.");
-		}
-	}
-	
+		
 	// Body: plainセット.
 	protected static final int TYPE_PLAIN = 0;
 	// Body: JSONセット.
@@ -172,8 +159,8 @@ abstract class AbstractHttpIoCommon<T>
 	
 	// bodyをargsパラメータでセット.
 	protected static final void setBodyByArgs(
-		int type, HttpRequest req, Object[] args) {
-		checkArgs(args);
+		int type, AbstractReqRes<?> req, Object[] args) {
+		JsValidate.noArgsToError(args);
 		try {
 			Object body = null;
 			String mime = null;

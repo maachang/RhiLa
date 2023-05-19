@@ -8,7 +8,9 @@ import java.util.Map.Entry;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;
 
+import rhila.RhilaException;
 import rhila.lib.ArrayMap;
+import rhila.lib.BooleanUtil;
 import rhila.scriptable.AbstractRhinoFunction;
 import rhila.scriptable.MapScriptable;
 
@@ -24,6 +26,9 @@ public class MimeType {
 	
 	// 基本MimeType.
 	private static final ArrayMap<String, String> DEF_MIMETYPE;
+	
+	// 基本MimeTypeに対するバイナリ属性.
+	private static final ArrayMap<String, Boolean> DEF_MIME_BIN;
 	
 	// [mimeType]octet-stream.
 	public static final String OCTET_STREAM = "application/octet-stream";
@@ -68,6 +73,33 @@ public class MimeType {
 			,"png", "image/png"
 			/** ico. */
 			,"ico", "image/vnd.microsoft.icon"
+			/** gz. */
+			,"gz", "application/gzip"
+			/** zip. */
+			,"zip", "application/zip"
+		);
+		
+		DEF_MIME_BIN = new ArrayMap<String, Boolean>(
+			"text/plain", false
+			,"text/html", false
+			,"text/html", false
+			,"application/xhtml+xml", false
+			,"text/xml", false
+			,"application/json", false
+			,"application/rss+xm", false
+			,"text/css", false
+			,"text/javascript", false
+			,"text/javascript", false
+			,"text/csv", false
+			,"image/gif", true
+			,"image/jpeg", true
+			,"image/jpeg", true
+			,"image/png", true
+			,"image/vnd.microsoft.icon", true
+			,"application/octet-stream", true
+			,"application/x-www-form-urlencoded", false
+			,"application/gzip", true
+			,"application/zip", true
 		);
 		
 		instanceList = new ArrayMap<String, Scriptable>(
@@ -76,6 +108,7 @@ public class MimeType {
 			,"JSON", JSON
 			,"OCTET_STREAM", OCTET_STREAM
 			,"get", Get.LOAD_CRAC
+			,"isBinary", IsBinary.LOAD_CRAC
 			,"loadJSON", LoadJSON.LOAD_CRAC
 		);
 	}
@@ -88,6 +121,10 @@ public class MimeType {
 	// 拡張MimeType.
 	private Map<String, String> originMime = null;
 	
+	// 拡張MimeTypeのバイナリ判別用.
+	private Map<String, Boolean> originMimeBin = null;
+	
+	
 	// コンストラクタ.
 	private MimeType() {}
 	
@@ -97,21 +134,52 @@ public class MimeType {
 		// jsonは以下の形をローディングする.
 		// {
 		//   extension: mimeType
+		//      or 
+		//   extension: {mimeType: string, binary: boolean}
 		// }
 		// extension は拡張子
 		// mimeType は拡張子に対するMimeType.
+		// binary は対象MimeTypeがバイナリ設定の内容かのフラグ.
 		Entry e;
+		Object v;
+		String m;
+		boolean f;
+		Map p;
 		Map<String, String> o = new HashMap<String, String>();
+		Map<String, Boolean> oo = new HashMap<String, Boolean>();
 		Iterator<Entry> it = json.entrySet().iterator();
 		while(it.hasNext()) {
 			e = it.next();
-			o.put(String.valueOf(e.getKey()),
-				String.valueOf(e.getValue()));
+			v = e.getValue();
+			// value = {mimeType: string, binary: boolean}の場合.
+			if(v instanceof Map) {
+				p = (Map)v;
+				if(!p.containsKey("mimeType")) {
+					throw new RhilaException(
+						"Failed to load MimeType: malformed key=" +
+							e.getKey() + " value.");
+				}
+				m = String.valueOf(p.get("mimeType"));
+				f = false;
+				if(p.containsKey("binary")) {
+					f = BooleanUtil.parseBoolean(p.get("binary"));
+				}
+			// value = mimeTypeの場合.
+			} else {
+				m = String.valueOf(e.getValue());
+				f = false;
+			}
+			// 拡張MimeType.
+			o.put(String.valueOf(e.getKey()), m);
+			// 拡張MimeType拡張子.
+			oo.put(m, f);
 		}
 		originMime = o;
+		originMimeBin = oo;
 	}
 	
 	// 指定拡張子からMimeTypeを取得.
+	// nullの場合はMimeTypeが存在しない.
 	public String get(String extension) {
 		String ret = null;
 		extension = extension.trim();
@@ -122,6 +190,27 @@ public class MimeType {
 			}
 		}
 		return DEF_MIMETYPE.get(extension);
+	}
+	
+	// 対象MimeTypeがバイナリ形式かチェック.
+	// nullの場合はMimeTypeが存在しない.
+	public boolean isBinary(String mimeType) {
+		// mimeTypeのみを抽出.
+		int p = mimeType.indexOf(";");
+		if(p != -1) {
+			mimeType = mimeType.substring(0, p).trim();
+		}
+		// オリジナルMimeTypeバイナリ判別条件が存在する場合.
+		if(originMimeBin != null) {
+			if(originMimeBin.containsKey(mimeType)) {
+				return originMimeBin.get(mimeType);
+			}
+		}
+		// オリジナルMimeTypeバイナリ判別条件が存在する場合返却.
+		if(DEF_MIME_BIN.containsKey(mimeType)) {
+			return DEF_MIME_BIN.get(mimeType);
+		}
+		return false;
 	}
 	
 	// 新しいMimeTypeのロード.
@@ -164,6 +253,27 @@ public class MimeType {
 			return null;
 		}
 	}
+	
+	// 拡張子を指定してMimeTypeを取得する.
+	private static final class IsBinary extends AbstractRhinoFunction {
+	    // lambda snapStart CRaC用.
+	    protected static final IsBinary LOAD_CRAC = new IsBinary();
+	    
+		@Override
+		public String getName() {
+			return "isBinary";
+		}
+
+		@Override
+		public Object function(
+			Context ctx, Scriptable scope, Scriptable thisObj, Object[] args) {
+			if(args != null && args.length >= 1 && args[0] instanceof String) {
+				return MimeType.LOAD_CRAC.isBinary((String)args[0]);
+			}
+			return null;
+		}
+	}
+
 	
 	// [js]HttpCookieValue.
 	public static final class MimeTypeScriptable extends AbstractRhinoFunction {

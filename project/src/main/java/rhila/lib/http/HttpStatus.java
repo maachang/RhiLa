@@ -149,6 +149,12 @@ public class HttpStatus {
 		return status;
 	}
 	
+	// リダイレクトステータスの場合.
+	public static final boolean isRedirectStatus(int status) {
+		return (status == 301 || status == 302 || status == 303 ||
+			status == 307 || status == 308);
+	}
+	
 	// ステータスメッセージを取得.
 	public String getMessage() {
 		return message;

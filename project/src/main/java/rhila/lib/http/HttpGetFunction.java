@@ -25,6 +25,7 @@ public class HttpGetFunction implements RhinoGetFunction {
 			"HttpCookieValue", HttpCookieValueScriptable.LOAD_CRAC
 			,"HttpHeader", HttpHeaderScriptable.LOAD_CRAC
 			,"HttpRequest", HttpRequest.LOAD_CRAC
+			,"HttpResponse", HttpResponse.LOAD_CRAC
 			,"HttpStatus", HttpStatusScriptable.LOAD_CRAC
 			,"MimeType", MimeTypeScriptable.LOAD_CRAC
 		);

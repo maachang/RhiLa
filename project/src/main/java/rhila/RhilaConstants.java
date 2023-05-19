@@ -6,6 +6,9 @@ package rhila;
 public class RhilaConstants {
 	private RhilaConstants() {}
 	
+    // lambda snapStart CRaC用.
+	protected static final RhilaConstants LOAD_CRAC = new RhilaConstants();
+	
 	// version.
 	public static final String VERSION = "0.0.1";
 	

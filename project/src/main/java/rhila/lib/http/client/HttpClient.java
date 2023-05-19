@@ -5,18 +5,19 @@ import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.reflect.Method;
 import java.net.Socket;
-import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.Map;
 
+import rhila.RhilaConstants;
 import rhila.RhilaException;
 import rhila.lib.ByteArrayBuffer;
 import rhila.lib.NumberUtil;
 import rhila.lib.ObjectUtil;
 import rhila.lib.http.HttpCookieValue;
-import rhila.lib.http.HttpStatus;
+import rhila.lib.http.HttpHeader;
+import rhila.lib.http.HttpReceiveChunked;
+import rhila.lib.http.HttpRequest;
+import rhila.lib.http.HttpResponse;
+import rhila.lib.http.HttpUtil;
 import rhila.scriptable.BinaryScriptable;
 
 /**
@@ -38,8 +39,7 @@ public final class HttpClient {
 	// System.setProperty("jdk.tls.client.protocols", "TLSv1.2");
 	//
 
-	protected HttpClient() {
-	}
+	protected HttpClient() {}
 	
 	// Maxリトライ(15回).
 	private static int MAX_RETRY = 15;
@@ -47,94 +47,62 @@ public final class HttpClient {
 	// Socketタイムアウト値(30秒).
 	private static int TIMEOUT = 30000;
 	
+	// 最大レスポンス受信(10MByte).
+	private static int MAX_RESPONSE_BODY = 0x100000 * 10;
+	
 	// HttpClient.
-	public static final HttpResult request(
-		String host, String path, Map<String, Object> options) {
-		String accessUrl;
-		HttpStatus state;
-		String location;
-		int cnt = 0;
-		HttpResult ret = null;
-		if(options == null) {
-			options = new HashMap<String, Object>();
-		}
-		String url = createURL(host, path);
+	public static final void request(
+		HttpRequest request, HttpResponse response) {
+		int redirectCount = 0;
+		String url = request.getFullURL();
+		String srcURL = url;
 		while (true) {
-			// MethodがGETで、FormDataが存在する場合はGETのパラメータ設定.
-			accessUrl = appendUrlParams(url, options);
-			// Httpアクセス.
-			ret = accessHttp(accessUrl, options);
-			// 処理結果のステータスを取得.
-			state = ret.getStatus();
-			// リダイレクト要求の場合.
-			if(HttpStatus.MovedPermanently == state ||
-				HttpStatus.MovedTemporarily == state ||
-				HttpStatus.SeeOther == state ||
-				HttpStatus.TemporaryRedirect == state ||
-				HttpStatus.PermanentRedirect == state) {
-				// リダイレクトが許可されていない場合.
-				if(RedirectMode.error == option.getRedirect()) {
-					throw new HttpClientException(
-						"Redirection is not allowed.");
+			// Http / httpsアクセス.
+			sendRequest(request, response);
+			// リダイレクトの場合.
+			if(response.isRedirect()) {
+				// 規定回数を超えるリダイレクトの場合.
+				if (redirectCount ++ > MAX_RETRY) {
+					throw new RhilaException(
+						"Redirect limit exceeded: " + srcURL);
 				}
-				// locationを取得.
-				location = ret.getHeader().get("location");
-				// locationが存在しない場合.
-				if(location == null || location.isEmpty()) {
-					throw new HttpClientException(
+				// リダイレクトが許可されていない場合.
+				if(response.getRedirect() == null) {
+					throw new RhilaException(
 						"Detects rogue redirects.");
 				}
-				// リダイレクト先のURLがフルパスじゃない場合.
-				if(!location.startsWith("http://") &&
-					!location.startsWith("https://")) {
-					location = margeUrl(accessUrl, location);
-				}
-				// GETでリダイレクト必須のステータスの場合.
-				if(HttpStatus.MovedPermanently == state ||
-					HttpStatus.MovedTemporarily == state ||
-					HttpStatus.SeeOther == state) {
-					// GETメソッドでない場合はGETメソッドに変更する.
-					if(Method.GET != option.getMethod()) {
-						option.cancelFix();
-						option.setMethod(Method.GET);
-						option.fix();
-					}
-				}
-				// リダイレクト先のURL設定.
-				url = location;
-				// 規定回数を超えるリダイレクトの場合.
-				if (cnt ++ > MAX_RETRY) {
-					throw new HttpClientException(
-						"Retry limit exceeded.");
-				}
-				continue;
+				// requestのURL再設定.
+				request.setQueryString(null); // queryStringは削除.
+				request.setURL(response.getRedirect()); // redirectURLをセット.
+				// responseをクリア.
+				response.reset();
+			} else {
+				break;
 			}
-			// 処理終了.
-			break;
 		}
-		return ret;
 	}
 
-	// 接続処理.
-	private static final HttpResult accessHttp(
-		String url, Map<String, Object> options) {
+	// 1つのアクセス処理.
+	private static final void sendRequest(
+		HttpRequest request, HttpResponse response) {
 		Socket socket = null;
 		InputStream in = null;
 		OutputStream out = null;
 		try {
-			// URL解析.
-			String[] urlArray = parseUrl(url);
+			// Socket作成用のURL解析結果を生成.
+			String[] urlArray = HttpUtil.parseUrl(request.getURL());
 
 			// リクエスト送信.
 			socket = createSocket(urlArray);
+			// Socket書き込みを生成.
 			out = new BufferedOutputStream(socket.getOutputStream());
 
-			// リクエスト送信.
-			createRequest(urlArray, out, options);
+			// リクエスト実行.
+			executeRequest(request, urlArray, out);
 
-			// レスポンス受信.
+			// レスポンス実行.
 			in = new BufferedInputStream(socket.getInputStream());
-			HttpResult ret = receiveHttp(url, in, options);
+			executeReceive(request, response, in);
 
 			out.close();
 			out = null;
@@ -142,19 +110,9 @@ public final class HttpClient {
 			in = null;
 			socket.close();
 			socket = null;
-			return ret;
 		} catch(Exception e) {
-			// エラー発生の場合はbodyをクローズ.
-			if (option != null) {
-				if(option.getBody() != null) {
-					try {
-						option.getBody().close();
-					} catch(Exception ee) {
-					}
-				}
-			}
 			// Internalエラー返却.
-			throw new HttpClientException(500, e);
+			throw new RhilaException(e);
 		} finally {
 			if (out != null) {
 				try {
@@ -181,123 +139,92 @@ public final class HttpClient {
 	// ソケット生成.
 	private static final Socket createSocket(String[] urlArray)
 		throws IOException {
-		
+		// Socket or SSLSocketを作成.
 		return RhilaSocketFactory.create(
 			"https".equals(urlArray[0]), urlArray[1],
 			NumberUtil.parseInt(urlArray[2]),
 			TIMEOUT);
 	}
 
-	// 文字コードを取得.
-	private static final String getOptionCharset(HttpClientOption option) {
-		String charset = option.getCharset();
-		if(charset == null) {
-			charset = HttpConstants.getCharset();
-		}
-		return charset;
+	// httpHeaderをセット.
+	private static final void appendHeader(
+		StringBuilder buf, String key, String value) {
+		buf.append(ObjectUtil.encodeURIComponent(key)).append(":")
+			.append(ObjectUtil.encodeURIComponent(value))
+			.append("\r\n");
 	}
 
 	// HTTPリクエストを作成.
-	private static final void createRequest(
-		String[] urlArray, OutputStream out, Map<String, Object> options)
+	private static final void executeRequest(
+		HttpRequest request, String[] urlArray, OutputStream out)
 		throws IOException {
-		Header header = option.getHeaders();
-		Method method = option.getMethod();
-		String url = urlArray[3];
-		String charset = getOptionCharset(option);
+		
+		HttpHeader header = request.getHeader();
+		String method = request.getMethod();
+		
 		// 先頭条件を設定.
 		StringBuilder buf = new StringBuilder();
 		buf.append(method).append(" ")
-			.append(url);
-		// GETでフォームデータが存在する場合.
-		if(Method.GET == method && option.isFormData()) {
-			// パラメーターとしてセット.
-			if(url.indexOf("?") == -1) {
-				buf.append("?");
-			} else {
-				buf.append("&");
-			}
-			buf.append(option.getFormData());
-		}
+			.append(request.getFullURL());
 		buf.append(" HTTP/1.1\r\n");
-		// 基本ヘッダ生成.
-		buf.append("Host:").append(urlArray[1]);
+		
+		// 強制的にセットするヘッダをセット.
 		if (("http".equals(urlArray[0]) && !"80".equals(urlArray[2]))
 				|| ("https".equals(urlArray[0]) && !"443".equals(urlArray[2]))) {
-			buf.append(":").append(urlArray[2]);
+			appendHeader(buf, "host", urlArray[1] + ":" + urlArray[2]);
+		} else {
+			appendHeader(buf, "host", urlArray[1]);
 		}
-		buf.append("\r\n");
-		if (header == null || !header.containsKey("User-Agent")) {
-			buf.append("User-Agent:").append(HttpConstants.getServerName())
-				.append("\r\n");
+		appendHeader(buf, "accept", "*/*");
+		appendHeader(buf, "accept-encoding", "gzip,deflate");
+		appendHeader(buf, "connection", "close");
+		
+		// ユーザ指定がない場合セット.
+		if (header == null || !header.isHeader("User-Agent")) {
+			appendHeader(buf, "user-agent", RhilaConstants.SERVER_NAME);
 		}
-		buf.append("Accept-Encoding:gzip,deflate\r\n");
-		buf.append("Connection:close\r\n");
+		
 		// ユーザ定義ヘッダを設定.
 		int hlen;
-		if (header != null && (hlen = header.size()) > 0) {
-			boolean contentType = false;
+		Object[] hKeys = header != null ? header.getHeaderKeys() : null;
+		if (hKeys != null && (hlen = hKeys.length) > 0) {
 			String k, v;
 			for(int i = 0; i < hlen; i ++) {
-				k = header.getKey(i);
-				v = header.getValue(i);
-				// 登録できない内容を削除.
-				if (k == null ||
-					Alphabet.eqArray(k, "host", "connection") != -1
-				) {
+				k = (String)hKeys[i];
+				// 登録できない内容は処理しない.
+				if ("host".equals(k) || "connection".equals(k) ||
+					"accept".equals(k) || "accept-encoding".equals(k) ||
+					"content-length".equals(k)) {
 					continue;
-				// コンテンツタイプが設定されている場合.
-				} else if(Alphabet.eq(k, "content-type")) {
-					contentType = true;
 				}
+				v = header.getHeader(k);
 				// ユーザー定義のヘッダを出力.
-				buf.append(k).append(":").append(v).append("\r\n");
-			}
-			// コンテンツタイプが設定されてなくて、Body情報がファイル送信の場合.
-			if(!contentType && option.getBody() != null &&
-				option.getBody() instanceof NioSendFileData) {
-				// 拡張子からmimeTypeを取得する.
-				String name = ((NioSendFileData)option.getBody())
-					.getFileName();
-				String mime = MimeTypes.getInstance()
-					.getFileNameToMimeType(name);
-				if(mime != null) {
-					buf.append("Content-Type:").append(mime);
-				}
-				buf.append("\r\n");
+				appendHeader(buf, k, v);
 			}
 		}
-		// ヘッダ終端.
-		buf.append("\r\n");
-		// binary 変換.
-		String s = buf.toString();
-		buf = null;
+		
+		// header and body出力.
 		try {
-			// ヘッダ出力.
-			out.write(s.getBytes(charset));
-			s = null;
-			// body情報が存在する場合.
-			NioSendData body = option.getBody();
+			// bodyが存在する場合.
+			BinaryScriptable body = request.getBody();
 			if(body != null) {
-				try {
-					// body送信.
-					int len;
-					final byte[] b = new byte[1024];
-					final ByteBuffer bbuf = ByteBuffer.wrap(b);
-					// ByteBufferでWrapして取得.
-					while((len = body.read(bbuf)) != -1) {
-						out.write(b, 0, len);
-					}
-					body.close();
-					body = null;
-				} finally {
-					if(body != null) {
-						try {
-							body.close();
-						} catch(Exception e) {}
-					}
-				}
+				// contentLengthをセット.
+				appendHeader(buf,
+					"content-length", String.valueOf(body.size()));
 			}
+			
+			// ヘッダ終端をセット.
+			buf.append("\r\n");
+			// ヘッダ出力.
+			out.write(buf.toString().getBytes("UTF8"));
+			buf = null;
+			
+			// bodyが存在する場合.
+			if(body != null) {
+				// body書き込み.
+				out.write(body.getRaw());
+			}
+			
 			out.flush();
 			out = null;
 		} finally {
@@ -314,30 +241,28 @@ public final class HttpClient {
 
 	// ヘッダ終端.
 	private static final byte[] END_HEADER = ("\r\n\r\n").getBytes();
-
+	
+	// ReceiveBufferバケット長.
+	private static final int RECEIVE_BUCKET_LENGTH = 1024;
+	
 	// データ受信.
-	@SuppressWarnings("resource")
-	private static final HttpResult receiveHttp(
-		String url, InputStream in, HttpClientOption option)
+	private static final void executeReceive(
+		HttpRequest request, HttpResponse response, InputStream in)
 		throws IOException {
-		int len, p;
-		boolean memFlg = true;
-		final long maxBodyLength = HttpConstants
-			.getMaxRecvMemoryBodyLength();
-		final int binaryLength = NioConstants.getBufferSize();
-		final byte[] binary = new byte[binaryLength];
-		ByteArrayBuffer recvBuf = new ByteArrayBuffer(NioConstants.getBufferSize());
+		int len, p, pp, ppp;
+		final byte[] binary = new byte[RECEIVE_BUCKET_LENGTH];
+		ByteArrayBuffer recvBuf = new ByteArrayBuffer(RECEIVE_BUCKET_LENGTH);
 		HttpReceiveChunked recvChunked = null;
 		long contentLength = 0L;
 		byte[] b = null;
+		boolean loadEndHeaderFlag = false;
 		int status = -1;
 		String message = "";
-		HttpResultImpl result = null;
-		NioRecvBody body = null;
+		ByteArrayBuffer body = null;
 		try {
 			while ((len = in.read(binary)) != -1) {
-				// データ生成が行われていない場合.
-				if (result == null) {
+				// ヘッダの読み込みが完了していない場合.
+				if (!loadEndHeaderFlag) {
 					// 受信ヘッダバッファに出力.
 					recvBuf.write(binary, 0, len);
 					// ステータス取得が行われていない.
@@ -345,8 +270,7 @@ public final class HttpClient {
 						// ステータスが格納されている１行目の情報を取得.
 						if ((p = recvBuf.indexOf(CFLF)) != -1) {
 							// HTTP/1.1 {Status} {MESSAGE}\r\n
-							int pp, ppp;
-							b = binaryLength > p + 2 ?
+							b = RECEIVE_BUCKET_LENGTH > p + 2 ?
 								binary : new byte[p + 2];
 							recvBuf.read(b, 0, p + 2);
 							String top = new String(b, 0, p + 2, "UTF8");
@@ -369,77 +293,78 @@ public final class HttpClient {
 							continue;
 						}
 					}
-					// ヘッダ終端が存在.
+					// ヘッダ終端を検知した場合.
 					if ((p = recvBuf.indexOf(END_HEADER)) != -1) {
 						b = new byte[p + 2];
 						recvBuf.read(b);
 						recvBuf.skip(2);
-						Header header = new HttpReceiveHeader(b);
+						
+						// responseにヘッダ反映.
+						HttpHeader header = parseResponseHeader(response.getHeader(), b);
 						b = null;
-						result = new HttpResultImpl(status, message, header);
-						// content-length.
-						String value = header.get("content-length");
+						
+						// responseにステータス反映.
+						response.getStatus().setStatus(status, message);
+						
+						// ヘッダ読み込み完了.
+						loadEndHeaderFlag = true;
+						
+						// content-lengthを取得.
+						String value = header.getHeader("content-length");
+						// content-lengthが存在する場合.
 						if (NumberUtil.isNumeric(value)) {
 							contentLength = NumberUtil.parseLong(value);
-						}
-						// chunked.
-						else {
-							value = header.get("transfer-encoding");
-							if (Alphabet.eq("chunked", value)) {
+						// content-lengthが存在しない場合.
+						} else {
+							// chunkedでBody取得かをチェック.
+							value = header.getHeader("transfer-encoding");
+							if (value != null && "chunked".equals(value.toLowerCase())) {
+								// chunkedで取得.
 								contentLength = -1L;
 							}
 						}
 						// ContentLengthが存在する場合.
 						if(contentLength > 0L) {
-							// 一定以上のデータ長の場合は、一時ファイルで受け取る.
-							if(contentLength > maxBodyLength) {
-								body = new NioRecvFileBody();
-								// 受信Bodyに現在の残りデータを設定.
-								body.write(recvBuf.toByteArray());
-								recvBuf.close();
-							} else {
-								body = new NioRecvMemBody(recvBuf);
+							// Bodyの受信最大容量を超えてる場合、エラー返却.
+							if(contentLength > MAX_RESPONSE_BODY) {
+								throw new RhilaException(
+									"Body length exceeds maximum capacity: " +
+									contentLength + "byte");
 							}
+							// 受信Bodyに現在の残りデータを設定.
+							body = new ByteArrayBuffer();
+							if(recvBuf.size() > 0) {
+								body.write(recvBuf.toByteArray());
+							}
+							recvBuf.close();
 							recvBuf = null;
 							continue;
 						// チャンク受信の場合.
 						} else if(contentLength == -1) {
 							recvChunked = new HttpReceiveChunked(recvBuf);
-							body = new NioRecvMemBody();
+							body = new ByteArrayBuffer();
 							// 今回分のデータ読み込み.
 							while((len = recvChunked.read(binary)) > 0) {
 								body.write(binary, 0, len);
-								// データ長が一定以上を超えた場合.
-								if(memFlg && body.getLength() > maxBodyLength) {
-									// 一時ファイル処理に切り替える.
-									NioRecvFileBody d = new NioRecvFileBody();
-									d.write(binary, (NioRecvMemBody)body);
-									body.close();
-									body = d;
-									memFlg = false;
-								}
 							}
 							recvBuf = null;
 							continue;
 						}
 					}
 				}
-				// チャンク受信の場合.
+				// body受信.
 				if(body != null) {
+					// チャンク受信の場合.
 					if(recvChunked != null) {
 						recvChunked.write(binary, 0, len);
 						// 今回分のデータ読み込み.
 						while((len = recvChunked.read(binary)) > 0) {
 							body.write(binary, 0, len);
-							// データ長が一定以上を超えた場合.
-							if(memFlg &&
-								body.getLength() > maxBodyLength) {
-								// 一時ファイル処理に切り替える.
-								NioRecvFileBody d = new NioRecvFileBody();
-								d.write(binary, (NioRecvMemBody)body);
-								body.close();
-								body = d;
-								memFlg = false;
+							// Bodyの受信最大容量を超えてる場合、エラー返却.
+							if(body.size() > MAX_RESPONSE_BODY) {
+								throw new RhilaException(
+									"Body's chunked receive length exceeds maximum capacity: " +
+									contentLength + "byte");
 							}
 						}
 					// 通常受信の場合.
@@ -448,15 +373,16 @@ public final class HttpClient {
 					}
 				}
 			}
-			// resultが取得できてない場合.
-			if(result == null) {
-				throw new HttpClientException("The connection has been lost.");
-			// resultが存在する場合、recvBodyをセット.
-			} else if(body == null || body.getLength() == 0L) {
-				return result;
+			// body受信ができていない場合.
+			if(!loadEndHeaderFlag) {
+				throw new RhilaException(
+					"The connection has been lost.");
+			// bodyが存在しない場合.
+			} else if(body == null || body.size() == 0L) {
+				// 終了.
+				return;
 			}
-			result.setNioRecvBody(body);
-			return result;
+			response.setBody(body.toByteArray());
 		} finally {
 			if (recvBuf != null) {
 				try {
@@ -466,6 +392,82 @@ public final class HttpClient {
 			}
 		}
 	}
+	
+	// ヘッダKeyと要素の区切り.
+	private static final byte SEPARATOR_KEY_VALUE = (byte)':';
+	
+	// responseのhttpHeaderを解析.
+	private static final HttpHeader parseResponseHeader(
+		HttpHeader out, final byte[] headerBin) {
+		/**
+		 * バイナリの設定範囲は、以下のように行う必要があります.
+		 * --------------------------------------------
+		 * Location: https://www.google.com/\r\n
+		 * Content-Type: text/html; charset=UTF-8\r\n
+		 * Date: Mon, 12 Apr 2021 08:02:34 GMT\r\n
+		 * Expires: Wed, 12 May 2021 08:02:34 GMT\r\n
+		 * Cache-Control: public, max-age=2592000\r\n
+		 * Server: gws\r\n
+		 * Content-Length: 220\r\n
+		 * Connection: close\r\n
+		 * --------------------------------------------
+		 * key: value[\r\n]まで設定することでヘッダ行が認識されます.
+		 */
+		try {
+			byte b;
+			int i, p, s, e;
+			int len = headerBin.length - 1;
+			byte[] line = CFLF;
+			String key = null;
+			String value = null;
+			for(i = 0, p = 0, s = -1, e = -1; i < len; i ++) {
+				b = headerBin[i];
+				// ヘッダ要素の区切り情報がある場合.
+				if(b == line[0]) {
+					// ¥r¥nの区切り情報の場合.
+					if(headerBin[i + 1] == line[1]) {
+						// ヘッダキーを取得.
+						if(s != -1) {
+							// keyを取得.
+							key = ObjectUtil.decodeURIComponent(
+								new String(headerBin, s, e, "UTF8").trim())
+									.toLowerCase();
+							// valueを取得.
+							value = ObjectUtil.decodeURIComponent(
+								new String(headerBin, p, 1, "UTF8").trim());
+							// headerがsetCookieの場合.
+							if("set-cookie".equals(key)) {
+								// cookie設定(set-cookie).
+								out.setCookie(true, value);
+							} else {
+								// header設定.
+								out.setHeader(ObjectUtil.decodeURIComponent(key),
+									ObjectUtil.decodeURIComponent(value));
+							}
+						}
+						i ++;
+						// 次のヘッダ要素開始条件をセット.
+						p = i + 1;
+						s = e = -1;
+						continue;
+					}
+				}
+				// キー情報のチェック.
+				if(s == -1) {
+					// keyとvalueの区切りの場合.
+					if(b == SEPARATOR_KEY_VALUE) {
+						s = p;
+						e = i;
+						p = i + 1;
+					}
+				}
+			}
+			return out;
+		} catch(Exception e) {
+			throw new RhilaException(e);
+		}
+	}
+	
 
 	/*
 	public static final void main(String[] args) throws Exception {

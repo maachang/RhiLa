@@ -1,6 +1,5 @@
 package rhila.lib.http;
 
-import java.util.Date;
 import java.util.Iterator;
 import java.util.Map.Entry;
 
@@ -10,7 +9,7 @@ import org.mozilla.javascript.Scriptable;
 import rhila.RhilaConstants;
 import rhila.RhilaException;
 import rhila.lib.ArrayMap;
-import rhila.lib.DateUtil;
+import rhila.lib.JsValidate;
 import rhila.lib.NumberUtil;
 import rhila.lib.ObjectUtil;
 import rhila.scriptable.AbstractRhinoFunctionInstance;
@@ -19,7 +18,7 @@ import rhila.scriptable.MapScriptable;
 /**
  * HttpRequest.
  */
-public class HttpRequest extends AbstractHttpIoCommon<HttpResponse> {
+public class HttpRequest extends AbstractReqRes<HttpResponse> {
     // lambda snapStart CRaC用.
     protected static final HttpRequest LOAD_CRAC = new HttpRequest(true);
     
@@ -28,7 +27,8 @@ public class HttpRequest extends AbstractHttpIoCommon<HttpResponse> {
 	
 	// メソッド名群(sort済み).
 	private static final String[] FUNCTION_NAMES = new String[] {
-		"getBody"
+		"clearBody"
+		,"getBody"
 		,"getBodyToJSON"
 		,"getBodyToString"
 		,"getHeader"
@@ -100,6 +100,17 @@ public class HttpRequest extends AbstractHttpIoCommon<HttpResponse> {
 			return protocol + "://" + host + ":" + port + path;
 		}
 		return protocol + "://" + host + path;
+	}
+	
+	// url + queryStringを取得.
+	public String getFullURL() {
+		String url = getURL();
+		String queryString = getQueryString();
+		if(queryString != null) {
+			return url + (queryString.indexOf("?") == -1 ? "?" : "&")
+				+ queryString;
+		}
+		return url;
 	}
 	
 	// [URL]protocol名を取得.
@@ -345,68 +356,67 @@ public class HttpRequest extends AbstractHttpIoCommon<HttpResponse> {
 		public Object function(
 			Context ctx, Scriptable scope, Scriptable thisObj, Object[] args) {
 			switch(type) {
-			case 0: //"getBody"
+			case 0: //"clearBody"
+				return src.clearBody();
+			case 1: //"getBody"
 				return src.getBody();
-			case 1: //"getBodyToJSON"
+			case 2: //"getBodyToJSON"
 				return src.getBodyToJSON();
-			case 2: //"getBodyToString"
+			case 3: //"getBodyToString"
 				return src.getBodyToString();
-			case 3: //"getHeader"
+			case 4: //"getHeader"
 				return src.header;
-			case 4: //"getHost"
+			case 5: //"getHost"
 				return src.getHost();
-			case 5: //"getHttpVersion"
+			case 6: //"getHttpVersion"
 				return src.getHttpVersion();
-			case 6: //"getMethod"
+			case 7: //"getMethod"
 				return src.getMethod();
-			case 7: //"getPath"
+			case 8: //"getPath"
 				return src.getPath();
-			case 8: //"getPort"
+			case 9: //"getPort"
 				return src.getPort();
-			case 9: //"getProtocol"
+			case 10: //"getProtocol"
 				return src.getProtocol();
-			case 10: //"getQuery"
+			case 11: //"getQuery"
 				return src.getQuery();
-			case 11: //"getQueryString"
+			case 12: //"getQueryString"
 				return src.getQueryString();
-			case 12: //"getURL"
+			case 13: //"getURL"
 				return src.getURL();
-			case 13: //"setBody"
+			case 14: //"setBody"
 				setBodyByArgs(TYPE_PLAIN, src, args);
 				return src;
-			case 14: //"setBodyToBase64"
+			case 15: //"setBodyToBase64"
 				setBodyByArgs(TYPE_BASE64, src, args);
 				return src;
-			case 15: //"setBodyToJSON"
+			case 16: //"setBodyToJSON"
 				setBodyByArgs(TYPE_JSON, src, args);
 				return src;
-			case 16: //"setHttpVersion"
-				checkArgs(args);
-				checkArgsString(args, 0);
+			case 17: //"setHttpVersion"
+				JsValidate.noArgsStringToError(0, args);
 				src.setHttpVersion((String)args[0]);
 				return src;
-			case 17: //"setMethod"
-				checkArgs(args);
-				checkArgsString(args, 0);
+			case 18: //"setMethod"
+				JsValidate.noArgsStringToError(0, args);
 				src.setMethod((String)args[0]);
 				return src;
-			case 18: //"setQueryString"
-				checkArgs(args);
-				checkArgsString(args, 0);
+			case 19: //"setQueryString"
+				JsValidate.noArgsStringToError(0, args);
 				src.setQueryString((String)args[0]);
 				return src;
-			case 19: //"setURL"
-				checkArgs(args);
+			case 20: //"setURL"
+				JsValidate.noArgsToError(args);
 				if(args.length == 1) {
-					checkArgsString(args, 0);
+					JsValidate.noArgsStringToError(0, args);
 					src.setURL((String)args[0]);
 				} else {
-					checkArgsString(args, 0);
-					checkArgsString(args, 1);
+					JsValidate.noArgsStringToError(0, args);
+					JsValidate.noArgsStringToError(1, args);
 					src.setURL((String)args[0], (String)args[1]);
 				}
 				return src;
-			case 20: //"toString"
+			case 21: //"toString"
 				return src.toString();
 			}
 			// プログラムの不具合以外にここに来ることは無い.

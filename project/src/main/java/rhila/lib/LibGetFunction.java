@@ -48,6 +48,7 @@ public class LibGetFunction implements RhinoGetFunction {
 		Json.LOAD_CRAC.getClass();
 		NumberUtil.LOAD_CRAC.getClass();
 		ObjectUtil.LOAD_CRAC.getClass();
+		JsValidate.LOAD_CRAC.getClass();
 	};
 	
 	// オブジェクトを取得.
