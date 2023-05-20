@@ -15,6 +15,7 @@ import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManagerFactory;
 
+import rhila.RhilaConstants;
 import rhila.RhilaException;
 import rhila.lib.ByteArrayBuffer;
 
@@ -238,7 +239,10 @@ public final class RhilaSocketFactory {
 	// static呼び出し.
 	static {
 		// tls.clientプロトコルの設定.
-		System.setProperty("jdk.tls.client.protocols", "TLSv1.2");
+		System.setProperty(
+			"https.protocols", "TLSv" + RhilaConstants.SSL_VERSION);
+		System.setProperty(
+			"jdk.tls.client.protocols", "TLSv" + RhilaConstants.SSL_VERSION);
 		getSSLSocketFactory();
 	}
 }

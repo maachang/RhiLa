@@ -9,7 +9,7 @@ import rhila.RhilaException;
 /**
  * ByteArray用バッファ.
  */
-public class ByteArrayBuffer {
+public class ByteArrayBuffer extends OutputStream {
     // lambda snapStart CRaC用.
     protected static final ByteArrayBuffer LOAD_CRAC = new ByteArrayBuffer();
     

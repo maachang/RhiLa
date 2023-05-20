@@ -49,6 +49,8 @@ public final class HttpHeader {
 		,"getHeaderKeys"
 		,"getHeaderSize"
 		,"getMimeType"
+		,"isContentType"
+		,"isGzip"
 		,"removeCookie"
 		,"removeHeader"
 		,"setContentLength"
@@ -64,7 +66,7 @@ public final class HttpHeader {
 		Object[] list = new Object[len];
 		for(int i = 0, j = 0; i < len; i += 2, j ++) {
 			list[i] = FUNCTION_NAMES[j];
-			list[i + 1] = new HttpHeaderFunctions(j);
+			list[i + 1] = new FunctionList(j);
 		}
 		instanceList = new ArrayMap<String, Scriptable>(list);
 	}
@@ -205,6 +207,18 @@ public final class HttpHeader {
 	// ContentTypeに設定されているCharsetを返却.
 	public String getCharset() {
 		return HttpUtil.getContentTypeToCharset(getContentType());
+	}
+	
+	// bodyがgzipの場合.
+	public boolean isGzip() {
+		if(headers == null) {
+			return false;
+		}
+		String value = (String)headers.get("content-encoding");
+		if (value != null && "gzip".equals(value.toLowerCase())) {
+			return true;
+		}
+		return false;
 	}
 	
 	// コンテンツ長を取得.
@@ -419,13 +433,16 @@ public final class HttpHeader {
     			headers.entrySet().iterator();
     		while(it.hasNext()) {
     			e = it.next();
-    			out.append(ObjectUtil.encodeURIComponent(e.getKey()))
-    				.append(":").append(
-    					encodeURIComponentValue((String)e.getValue()));
-    			//out.append(e.getKey()).append(":").append(e.getValue());
+    			out.append(e.getKey()).append(":").append(e.getValue());
     			out.append("\r\n");
     		}
     	}
+    	// cookie出力.
+    	toStringByCookie(response, out);
+    }
+    
+	// cookieヘッダの出力.
+    public final void toStringByCookie(boolean response, StringBuilder out) {
     	// cookieヘッダ.
     	if(cookies != null) {
     		// HttpResponseで出力.
@@ -484,6 +501,7 @@ public final class HttpHeader {
         }
     }
     
+    /**
     // valueをカンマ単位でencodeURIComponentする.
     private static final String encodeURIComponentValue(String value) {
     	StringBuilder buf = new StringBuilder((int)(value.length() * 1.5d));
@@ -507,6 +525,7 @@ public final class HttpHeader {
     	}
     	return buf.toString();
     }
+    **/
 	
 	// args配列からcookie設定.
 	private static final void setCookieToArgs(HttpHeader obj, Object[] args) {
@@ -529,29 +548,29 @@ public final class HttpHeader {
 	}
 	
 	// [js]HttpStatusFunctions.
-	private static final class HttpHeaderFunctions
+	private static final class FunctionList
 		extends AbstractRhinoFunctionInstance {
 	    // lambda snapStart CRaC用.
 		@SuppressWarnings("unused")
-		protected static final HttpHeaderFunctions LOAD_CRAC =
-			new HttpHeaderFunctions();
+		protected static final FunctionList LOAD_CRAC =
+			new FunctionList();
 		
 		private int type;
 		private String typeString;
 		private HttpHeader object;
 		
 		// コンストラクタ.
-		private HttpHeaderFunctions() {}
+		private FunctionList() {}
 		
 		// コンストラクタ.
-		private HttpHeaderFunctions(int type) {
+		private FunctionList(int type) {
 			this.type = type;
 			this.typeString = FUNCTION_NAMES[type];
 		}
 		
 		// 新しいインスタンスを生成.
 		public final Scriptable getInstance(Object... args) {
-			HttpHeaderFunctions ret = new HttpHeaderFunctions(type);
+			FunctionList ret = new FunctionList(type);
 			ret.object = (HttpHeader)args[0];
 			return ret;
 		}
@@ -596,16 +615,20 @@ public final class HttpHeader {
 				return object.getHeaderSize();
 			case 12: //"getMimeType"
 				return object.getMimeType();
-			case 13: //"removeCookie"
+			case 13: //"isContentType"
+				return object.isContentType();
+			case 14: //"isGZip"
+				return object.isGzip();
+			case 15: //"removeCookie"
 				JsValidate.noArgsKeyToTypeError("string", args);
 				return object.removeHeader((String)args[0]);
-			case 14: //"removeHeader"
+			case 16: //"removeHeader"
 				JsValidate.noArgsKeyToTypeError("string", args);
 				return object.removeHeader((String)args[0]);
-			case 15: //"setContentLength"
+			case 17: //"setContentLength"
 				object.setContentLength(args[0]);
 				return null;
-			case 16: //"setContentType"
+			case 18: //"setContentType"
 				JsValidate.noArgsToError(args);
 				if(args.length == 1) {
 					JsValidate.noArgsStringToError(0, args);
@@ -616,15 +639,15 @@ public final class HttpHeader {
 					object.setContentType((String)args[0], (String)args[1]);
 				}
 				return null;
-			case 17: //"setCookie"
+			case 19: //"setCookie"
 				setCookieToArgs(object, args);
 				return null;
-			case 18: //"setHeader"
+			case 20: //"setHeader"
 				JsValidate.noArgsKeyToTypeError("string", args);
 				JsValidate.noArgsValueToTypeError("string", args);
 				object.setHeader((String)args[0], (String)args[1]);
 				return null;
-			case 19: //"toString"
+			case 21: //"toString"
 				return object.toString();
 			}
 			// プログラムの不具合以外にここに来ることは無い.

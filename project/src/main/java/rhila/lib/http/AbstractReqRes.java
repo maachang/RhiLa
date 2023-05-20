@@ -63,7 +63,14 @@ abstract class AbstractReqRes<T> extends AbstractRhinoFunction {
 		if(body == null) {
 			return null;
 		}
-		return body.toString();
+		// HttpHeaderの文字コードを取得.
+		String charset = header.getSrc().getCharset();
+		if(charset == null) {
+			// 取得出来ない場合はUTF8.
+			charset = "UTF8";
+		}
+		// 文字変換.
+		return body.convertString(charset);
 	}
 	
 	// body内容をJSON形式で取得.
@@ -120,7 +127,7 @@ abstract class AbstractReqRes<T> extends AbstractRhinoFunction {
 		if(mimeType != null) {
 			getHeader().setContentType(mimeType);
 		}
-		return (T)this;
+		return (T)this; 
 	}
 	
 	// json内容を設定.

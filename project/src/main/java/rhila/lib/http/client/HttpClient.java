@@ -9,9 +9,9 @@ import java.net.Socket;
 
 import rhila.RhilaConstants;
 import rhila.RhilaException;
+import rhila.core.Global;
 import rhila.lib.ByteArrayBuffer;
 import rhila.lib.NumberUtil;
-import rhila.lib.ObjectUtil;
 import rhila.lib.http.HttpCookieValue;
 import rhila.lib.http.HttpHeader;
 import rhila.lib.http.HttpReceiveChunked;
@@ -149,8 +149,7 @@ public final class HttpClient {
 	// httpHeaderをセット.
 	private static final void appendHeader(
 		StringBuilder buf, String key, String value) {
-		buf.append(ObjectUtil.encodeURIComponent(key)).append(":")
-			.append(ObjectUtil.encodeURIComponent(value))
+		buf.append(key).append(":").append(value)
 			.append("\r\n");
 	}
 
@@ -203,18 +202,24 @@ public final class HttpClient {
 			}
 		}
 		
+		// bodyが存在する場合.
+		BinaryScriptable body = request.getBody();
+		if(body != null) {
+			// contentLengthをセット.
+			appendHeader(buf,
+				"content-length", String.valueOf(body.size()));
+		}
+		
+		// cookie設定.
+		if(header != null && header.getCookieSize() > 0) {
+			header.toStringByCookie(false, buf);
+		}
+		
+		// ヘッダ終端をセット.
+		buf.append("\r\n");
+			
 		// header and body出力.
 		try {
-			// bodyが存在する場合.
-			BinaryScriptable body = request.getBody();
-			if(body != null) {
-				// contentLengthをセット.
-				appendHeader(buf,
-					"content-length", String.valueOf(body.size()));
-			}
-			
-			// ヘッダ終端をセット.
-			buf.append("\r\n");
 			// ヘッダ出力.
 			out.write(buf.toString().getBytes("UTF8"));
 			buf = null;
@@ -417,32 +422,29 @@ public final class HttpClient {
 			byte b;
 			int i, p, s, e;
 			int len = headerBin.length - 1;
-			byte[] line = CFLF;
 			String key = null;
 			String value = null;
 			for(i = 0, p = 0, s = -1, e = -1; i < len; i ++) {
 				b = headerBin[i];
 				// ヘッダ要素の区切り情報がある場合.
-				if(b == line[0]) {
+				if(b == CFLF[0]) {
 					// ¥r¥nの区切り情報の場合.
-					if(headerBin[i + 1] == line[1]) {
+					if(headerBin[i + 1] == CFLF[1]) {
 						// ヘッダキーを取得.
 						if(s != -1) {
 							// keyを取得.
-							key = ObjectUtil.decodeURIComponent(
-								new String(headerBin, s, e, "UTF8").trim())
-									.toLowerCase();
+							key = new String(headerBin, s, e - s, "UTF8").trim()
+								.toLowerCase();
 							// valueを取得.
-							value = ObjectUtil.decodeURIComponent(
-								new String(headerBin, p, 1, "UTF8").trim());
+							value = new String(headerBin, p, i - p, "UTF8").trim();
+							
 							// headerがsetCookieの場合.
 							if("set-cookie".equals(key)) {
 								// cookie設定(set-cookie).
 								out.setCookie(true, value);
 							} else {
 								// header設定.
-								out.setHeader(ObjectUtil.decodeURIComponent(key),
-									ObjectUtil.decodeURIComponent(value));
+								out.setHeader(key, value);
 							}
 						}
 						i ++;
@@ -468,37 +470,38 @@ public final class HttpClient {
 		}
 	}
 	
-
-	/*
+	/**
 	public static final void main(String[] args) throws Exception {
+		// オブジェクトの初期化.
+		Global.getInstance();
 		//System.setProperty("javax.net.debug", "all");
 		//-Dhttps.protocols=TLSv1.2
 		//-Djdk.tls.client.protocols=TLSv1.2
-		System.setProperty("https.protocols", "TLSv1.2");
-		System.setProperty("jdk.tls.client.protocols", "TLSv1.2");
+		//System.setProperty("https.protocols", "TLSv1.2");
+		//System.setProperty("jdk.tls.client.protocols", "TLSv1.2");
 		String url;
-		url = "http://127.0.0.1:3333/";
+		//url = "http://127.0.0.1:3333/";
 		//url = "https://google.com/";
+		url = "https://www.google.com/";
 		//url = "https://yahoo.co.jp/";
 		//url = "https://ja.javascript.info/fetch-api";
 		//url = "http://www.asyura2.com";
 		int loopLen = 1;
-		HttpResult res = null;
-		byte[] bin = null;
+		HttpRequest request = new HttpRequest();
+		HttpResponse response = new HttpResponse();
 		// １回目はSSL関連の初期化があるのではじめに一度だけ実行する.
-		res = HttpClient.get(url, null);
-		res.close();
+		request.setURL(url);
 		System.out.println("start");
 		long time = System.currentTimeMillis();
 		for(int i = 0; i < loopLen; i ++) {
-			res = HttpClient.get(url, null);
-			bin = res.getBody();
-			System.out.println("bin: " + bin.length);
+			HttpClient.request(request, response);
 		}
 		System.out.println("time: " + ((System.currentTimeMillis() - time) / loopLen) + " msec");
-		System.out.println("gzip: " + res.isGzip());
-		//System.out.println(res.getHeader());
-		//System.out.println(new String(bin, res.getCharset()));
+		System.out.println("length: " + response.getHeader().getContentLength());
+		System.out.println("bodyLen: " + response.getBody().size());
+		System.out.println("gzip: " + response.getHeader().isGzip());
+		//System.out.println(response.getHeader());
+		System.out.println(response.getBody().isGzip());
 	}
-	*/
+	**/
 }

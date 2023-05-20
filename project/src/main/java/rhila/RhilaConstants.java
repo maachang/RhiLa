@@ -9,6 +9,9 @@ public class RhilaConstants {
     // lambda snapStart CRaC用.
 	protected static final RhilaConstants LOAD_CRAC = new RhilaConstants();
 	
+	// SSL version.
+	public static final String SSL_VERSION = "1.3";
+	
 	// version.
 	public static final String VERSION = "0.0.1";
 	
