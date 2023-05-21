@@ -22,9 +22,9 @@ import rhila.scriptable.LowerKeyMapScriptable;
  * 提供するオブジェクト.
  */
 @SuppressWarnings({ "unchecked", "rawtypes" })
-public class HttpCookieValue {
+public class HttpCookieValue extends AbstractRhinoFunction {
     // lambda snapStart CRaC用.
-    protected static final HttpCookieValue LOAD_CRAC = new HttpCookieValue();
+    protected static final HttpCookieValue LOAD_CRAC = new HttpCookieValue(true);
     
 	// instance可能なScriptable.
 	private static final ArrayMap<String, Scriptable> instanceList;
@@ -44,11 +44,21 @@ public class HttpCookieValue {
 	private final ArrayMap<String, Object> objInsList =
 		new ArrayMap<String, Object>();
 	
+	// cookieKey.
     private String key = null;
+    // cookieValue.
 	private LowerKeyMapScriptable value = null;
+	// staticFlag.
+	private boolean staticFlag = false;
 	
 	// コンストラクタ.
 	public HttpCookieValue() {}
+	
+	// staticFlag付きコンストラクタ.
+	protected HttpCookieValue(boolean staticFlag) {
+		this.staticFlag = staticFlag;
+	}
+
 	
 	// コンストラクタ.
 	public HttpCookieValue(String key, Object value) {
@@ -175,12 +185,15 @@ public class HttpCookieValue {
 	
 	// value情報を取得.
 	public String getValue() {
+        if(value == null) {
+        	return null;
+        }
 		return (String)value.get("value");
 	}
 	
 	// CookieのOptionを取得.
 	public String getOption(String name) {
-		if("value".equals(name)) {
+		if(value == null || "value".equals(name)) {
 			return null;
 		}
 		Object ret = value.get(name);
@@ -198,6 +211,9 @@ public class HttpCookieValue {
 	
 	// [cookie:]getCookieでの文字列化.
 	private final void toStringByKeyValueString(StringBuilder out) {
+        if(value == null) {
+        	return;
+        }
         String v = value.get("value") == null ?
             	"" : (String)value.get("value");
         // key=value条件.
@@ -213,6 +229,9 @@ public class HttpCookieValue {
 	// [set-cookie:]setCookieでの文字列化.
 	protected void toStringBySetCookie(StringBuilder out) {
         Entry<String, Object> e;
+        if(value == null) {
+        	return;
+        }
         toStringByKeyValueString(out);
         // cookie要素を連結.
         Iterator<Entry<String, Object>> itn = value.entrySet().iterator();
@@ -240,9 +259,67 @@ public class HttpCookieValue {
 	
 	@Override
 	public String toString() {
+		if(staticFlag) {
+			return getName();
+		}
 		StringBuilder buf = new StringBuilder();
 		toStringBySetCookie(buf);
 		return buf.toString();
+	}
+	
+	@Override
+	public String getClassName() {
+		return "HttpCookieValue";
+	}
+	
+	// new HttpCookieValueScriptable();
+	@Override
+	public Scriptable newInstance(Context arg0, Scriptable arg1, Object[] arg2) {
+		// 新しいScriptableオブジェクトを生成.
+		HttpCookieValue ret = new HttpCookieValue();
+		setArgs(ret, arg2);
+		return ret;
+	}
+
+	@Override
+	public String getName() {
+		return "[HttpCookieValue]";
+	}
+	
+	@Override
+	public Object[] getIds() {
+		return value.getIds();
+	}
+	
+	@Override
+	public Object get(String arg0, Scriptable arg1) {
+		return getFunction(arg0);
+	}
+	
+	// function取得.
+	private final Object getFunction(String name) {
+		// staticの場合.
+		if(staticFlag) {
+			if("toString".equals(name)) {
+				return toString();
+			}
+			return null;
+		}
+		// オブジェクト管理の生成Functionを取得.
+		Object ret = objInsList.get(name);
+		// 存在しない場合.
+		if(ret == null) {
+			// static管理のオブジェクトを取得.
+			ret = instanceList.get(name);
+			// 存在する場合.
+			if(ret != null) {
+				// オブジェクト管理の生成Functionとして管理.
+				ret = ((AbstractRhinoFunctionInstance)ret)
+					.getInstance(this);
+				objInsList.put(name, ret);
+			}
+		}
+		return ret;
 	}
 	
 	// Key取得.
@@ -374,87 +451,4 @@ public class HttpCookieValue {
 			return src.toString();
 		}
 	}
-	
-	// [js]HttpCookieValue.
-	public static final class HttpCookieValueScriptable extends AbstractRhinoFunction {
-	    // lambda snapStart CRaC用.
-	    protected static final HttpCookieValueScriptable LOAD_CRAC =
-	    	new HttpCookieValueScriptable();
-	    
-		protected HttpCookieValueScriptable() {}
-		protected HttpCookieValue src = null;
-		private boolean staticFlag = true;
-		
-		@Override
-		public String getClassName() {
-			return "HttpCookieValueScriptable";
-		}
-		
-		// 元のオブジェクトを取得.
-		public HttpCookieValue getSrc() {
-			return src;
-		}
-		
-		// new HttpCookieValueScriptable();
-		@Override
-		public Scriptable newInstance(Context arg0, Scriptable arg1, Object[] arg2) {
-			// 新しいScriptableオブジェクトを生成.
-			HttpCookieValueScriptable ret = new HttpCookieValueScriptable();
-			ret.src = new HttpCookieValue();
-			setArgs(ret.src, arg2);
-			ret.staticFlag = false;
-			return ret;
-		}
-		
-		// new HttpCookieValueScriptable();
-		public static final HttpCookieValueScriptable getInstance(HttpCookieValue src) {
-			HttpCookieValueScriptable ret = new HttpCookieValueScriptable();
-			ret.src = src;
-			ret.staticFlag = false;
-			return ret;
-		}
-
-		@Override
-		public String getName() {
-			return "[HttpCookieValue]";
-		}
-		
-		@Override
-		public String toString() {
-			return getName();
-		}
-		
-		@Override
-		public Object[] getIds() {
-			return src.value.getIds();
-		}
-		
-		@Override
-		public Object get(String arg0, Scriptable arg1) {
-			return getFunction(arg0);
-		}
-		
-		// function取得.
-		private final Object getFunction(String name) {
-			// staticの場合.
-			if(staticFlag) {
-				return null;
-			}
-			// オブジェクト管理の生成Functionを取得.
-			Object ret = src.objInsList.get(name);
-			// 存在しない場合.
-			if(ret == null) {
-				// static管理のオブジェクトを取得.
-				ret = instanceList.get(name);
-				// 存在する場合.
-				if(ret != null) {
-					// オブジェクト管理の生成Functionとして管理.
-					ret = ((AbstractRhinoFunctionInstance)ret)
-						.getInstance(src);
-					src.objInsList.put(name, ret);
-				}
-			}
-			return ret;
-		}
-	}	
 }

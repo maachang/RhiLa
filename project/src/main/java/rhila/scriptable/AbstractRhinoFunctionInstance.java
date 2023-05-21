@@ -12,5 +12,4 @@ public abstract class AbstractRhinoFunctionInstance extends AbstractRhinoFunctio
 	
 	// 新しいインスタンスを生成.
 	public abstract Scriptable getInstance(Object... args);
-
 }

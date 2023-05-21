@@ -5,29 +5,24 @@ import java.util.List;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
-import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.Undefined;
 
 import rhila.RhilaException;
-import rhila.lib.ArrayMap;
 import rhila.lib.ByteArrayBuffer;
 import rhila.lib.NumberUtil;
 
 /**
  * Binary用Scriptable.
  */
-public class BinaryScriptable implements RhinoScriptable<byte[]> {
+public class BinaryScriptable extends AbstractRhinoCustomObject<byte[]> {
+	
     // lambda snapStart CRaC用.
-    protected static final BinaryScriptable LOAD_CRAC = new BinaryScriptable();
-	
-	// instance可能なScriptable.
-	private static final ArrayMap<String, Scriptable> instanceList;
-	
-	// 格納バイナリ.
-	private byte[] binary;
-	
-	// メソッド名群(sort済み).
+    protected static final BinaryScriptable LOAD_CRAC =
+    	new BinaryScriptable();
+    
+	// [js]メソッド名群(sort済み).
+    // この設定は initFunctions() 実行する行の前に定義が必要.
 	private static final String[] FUNCTION_NAMES = new String[] {
 		"copy"
 		,"isGzip"
@@ -37,21 +32,16 @@ public class BinaryScriptable implements RhinoScriptable<byte[]> {
 		,"toUnGzip"
 	};
 	
-	static {
-		// 配列で直接追加.
-		final int len = FUNCTION_NAMES.length * 2;
-		Object[] list = new Object[len];
-		for(int i = 0, j = 0; i < len; i += 2, j ++) {
-			list[i] = FUNCTION_NAMES[j];
-			list[i + 1] = new FunctionList(j);
-		}
-		instanceList = new ArrayMap<String, Scriptable>(list);
-	}
-	
-	// objectインスタンスリスト.
-	private final ArrayMap<String, Object> objInsList =
-		new ArrayMap<String, Object>();
-	
+	// 初期化.
+    static {
+    	// function初期化.
+    	LOAD_CRAC.initFunctions();
+    }
+    
+	// 格納バイナリ.
+	private byte[] binary;
+    
+    // コンストラクタ.
 	protected BinaryScriptable() {}
 	
 	// コンストラクタ.
@@ -102,11 +92,109 @@ public class BinaryScriptable implements RhinoScriptable<byte[]> {
 		}
 	}
 	
+	// function名群を返却.
+	// ここでの返却値はstaticで名前はソート済みで設定します.
+	@Override
+	protected String[] getFunctionNames() {
+		return FUNCTION_NAMES;
+	}
+	
+	// function実行.
+	// type＝実行対象のgetFunctionNames()のIndex値が設定されます.
+	@Override
+	protected Object callFunction(int type, Object[] args) {
+		switch(type) {
+		case 0: //"copy"
+			return copy(args);
+		case 1: //"isGzip"
+			return isGzip();
+		case 2: //"toBase64"
+			return toBase64();
+		case 3: //"toGzip"
+			toGzip();
+			return this;
+		case 4: //"toString"
+			return toString(args);
+		case 5: //"toUnGzip"
+			toUnGzip();
+			return this;
+		}
+		// プログラムの不具合以外にここに来ることは無い.
+		throw new RhilaException(
+			"An unspecified error (type: " + type + ") occurred");
+	}
+	
+	// 名前を返却.
+	@Override
+	public String getName() {
+		return "Binary";
+	}
+	
 	// 元情報を取得.
+	@Override
 	public byte[] getRaw() {
 		return binary;
 	}
 	
+	// function取得.
+	@Override
+	protected final Object getFunction(String name) {
+		// staticFlag条件を含むのでまず読み込む.
+		Object ret = super.getFunction(name);
+		// 返却時がnullで、返却したいnameのvalueが存在する場合.
+		if(ret == null && "length".equals(name)) {
+			return size();
+		}
+		return ret;
+	}
+	
+	// 新しいインスタンスを生成.
+	@SuppressWarnings("rawtypes")
+	@Override
+	public Scriptable newInstance(Object[] args) {
+		if(args == null || args.length == 0) {
+			throw new RhilaException("Argument not valid");
+		}
+		// バイナリ生成オプション群.
+		int len = args.length;
+		if(len == 1) {
+			Object o = args[0];
+			if(o instanceof byte[]) {
+				return new BinaryScriptable((byte[])o);
+			} else if(o instanceof BinaryScriptable) {
+				return new BinaryScriptable((BinaryScriptable)o);
+			} else if(o instanceof Number) {
+				return new BinaryScriptable(((Number)o).intValue());
+			} else if(o instanceof String) {
+				return new BinaryScriptable((String)o);
+			} else if(o instanceof List) {
+				List lst = (List)o;
+				len = lst.size();
+				byte[] bin = new byte[len];
+				for(int i = 0; i < len; i ++) {
+					bin[i] = NumberUtil.parseInt(lst.get(i)).byteValue();
+				}
+				return new BinaryScriptable(bin);					
+			}
+		} else if(len == 2) {
+			if(args[0] instanceof String && args[1] instanceof String) {
+				return new BinaryScriptable((String)args[0], (String)args[1]);
+			}
+		} else {
+			byte[] bin = new byte[len];
+			for(int i = 0; i < len; i ++) {
+				bin[i] = NumberUtil.parseInt(args[i]).byteValue();
+			}
+			return new BinaryScriptable(bin);
+		}
+		throw new RhilaException("Argument not valid");		
+	}
+	
+	@Override
+	public String resultToString() {
+		return (String)toString(null);
+	}
+
 	// バイナリを取得.
 	public byte[] toByteArray() {
 		return binary;
@@ -161,7 +249,8 @@ public class BinaryScriptable implements RhinoScriptable<byte[]> {
 	// バイナリがGzipのオブジェクトか取得.
 	public boolean isGzip() {
 		try {
-			toUnGzip();
+			new GZIPInputStream(
+				new ByteArrayInputStream(binary), 512);
 			return true;
 		} catch(Exception e) {
 			return false;
@@ -263,159 +352,5 @@ public class BinaryScriptable implements RhinoScriptable<byte[]> {
 			return -1;
 		}
 		return len;
-	}
-	
-	@Override
-	public Object get(String arg0, Scriptable arg1) {
-		return getFunction(arg0); 
-	}
-	
-	// function取得.
-	private final Object getFunction(String name) {
-		if("length".equals(name)) {
-			return size();
-		}
-		// オブジェクト管理の生成Functionを取得.
-		Object ret = objInsList.get(name);
-		// 存在しない場合.
-		if(ret == null) {
-			// static管理のオブジェクトを取得.
-			ret = instanceList.get(name);
-			// 存在する場合.
-			if(ret != null) {
-				// オブジェクト管理の生成Functionとして管理.
-				ret = ((AbstractRhinoFunctionInstance)ret)
-					.getInstance(this);
-				objInsList.put(name, ret);
-			}
-		}
-		return ret;
-	}
-	
-	// [js]HttpStatusFunctions.
-	private static final class FunctionList
-		extends AbstractRhinoFunctionInstance {
-	    // lambda snapStart CRaC用.
-		@SuppressWarnings("unused")
-		protected static final FunctionList LOAD_CRAC =
-			new FunctionList();
-		
-		private int type;
-		private String typeString;
-		private BinaryScriptable object;
-		
-		// コンストラクタ.
-		private FunctionList() {}
-		
-		// コンストラクタ.
-		private FunctionList(int type) {
-			this.type = type;
-			this.typeString = FUNCTION_NAMES[type];
-		}
-		
-		// 新しいインスタンスを生成.
-		public final Scriptable getInstance(Object... args) {
-			FunctionList ret = new FunctionList(type);
-			ret.object = (BinaryScriptable)args[0];
-			return ret;
-		}
-		
-		@Override
-		public String getName() {
-			return typeString;
-		}
-		
-		// メソッド実行.
-		public Object function(
-			Context ctx, Scriptable scope, Scriptable thisObj, Object[] args) {
-			switch(type) {
-			case 0: //"copy"
-				return object.copy(args);
-			case 1: //"isGzip"
-				return object.isGzip();
-			case 2: //"toBase64"
-				return object.toBase64();
-			case 3: //"toGzip"
-				object.toGzip();
-			case 4: //"toString"
-				return object.toString(args);
-			case 5: //"toUnGzip"
-				object.toUnGzip();
-			}
-			// プログラムの不具合以外にここに来ることは無い.
-			throw new RhilaException(
-				"An unspecified error (type: " + type + ") occurred");
-		}
-	}
-	
-	// BinaryScriptableのオブジェクト利用.
-	public static final class BinaryScriptableObject
-		extends AbstractRhinoFunction {
-	    // lambda snapStart CRaC用.
-	    protected static final BinaryScriptableObject LOAD_CRAC =
-	    	new BinaryScriptableObject();
-	    
-		@Override
-		@SuppressWarnings("rawtypes")
-		public Scriptable newInstance(
-			Context arg0, Scriptable arg1, Object[] arg2) {
-			if(arg2 == null || arg2.length == 0) {
-				throw new RhilaException("Argument not valid");
-			}
-			// バイナリ生成オプション群.
-			int len = arg2.length;
-			if(len == 1) {
-				Object o = arg2[0];
-				if(o instanceof byte[]) {
-					return new BinaryScriptable((byte[])o);
-				} else if(o instanceof BinaryScriptable) {
-					return new BinaryScriptable((BinaryScriptable)o);
-				} else if(o instanceof Number) {
-					return new BinaryScriptable(((Number)o).intValue());
-				} else if(o instanceof String) {
-					return new BinaryScriptable((String)o);
-				} else if(o instanceof List) {
-					List lst = (List)o;
-					len = lst.size();
-					byte[] bin = new byte[len];
-					for(int i = 0; i < len; i ++) {
-						bin[i] = NumberUtil.parseInt(lst.get(i)).byteValue();
-					}
-					return new BinaryScriptable(bin);					
-				}
-			} else if(len == 2) {
-				if(arg2[0] instanceof String && arg2[1] instanceof String) {
-					return new BinaryScriptable((String)arg2[0], (String)arg2[1]);
-				}
-			} else {
-				byte[] bin = new byte[len];
-				for(int i = 0; i < len; i ++) {
-					bin[i] = NumberUtil.parseInt(arg2[i]).byteValue();
-				}
-				return new BinaryScriptable(bin);
-			}
-			throw new RhilaException("Argument not valid");		
-		}
-		
-		public static final BinaryScriptable newInstance(Number src) {
-			return new BinaryScriptable(src.intValue());
-		}
-		
-		public static final BinaryScriptable newInstance(String src) {
-			return new BinaryScriptable(src);
-		}
-		
-		public static final BinaryScriptable newInstance(byte[] src) {
-			return new BinaryScriptable(src);
-		}
-		
-		@Override
-		public String getName() {
-			return "Binary";
-		}
-		@Override
-		public String toString() {
-			return "[Binary]";
-		}
 	}
 }

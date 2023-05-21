@@ -37,6 +37,7 @@ public final class RhilaSocketFactory {
 	private static SocketFactory sslSocketFactory = null;
 	
 	// InputStreamからBinaryを取得.
+	@SuppressWarnings("resource")
 	private static final byte[] convertInputStreamToBinary(InputStream in)
 		throws IOException {
 		int len;
@@ -119,6 +120,7 @@ public final class RhilaSocketFactory {
 	// SSLSocketFactoryを取得.
 	protected static final SocketFactory getSSLSocketFactory() {
 		try {
+			// 生成されていない場合.
 			if (!sslSocketFactoryFlag) {
 				// jar内のcacertsを取得.
 				// このオブジェクトと同じclassPath内のcacertsを取得.
@@ -243,6 +245,7 @@ public final class RhilaSocketFactory {
 			"https.protocols", "TLSv" + RhilaConstants.SSL_VERSION);
 		System.setProperty(
 			"jdk.tls.client.protocols", "TLSv" + RhilaConstants.SSL_VERSION);
+		// socketFactoryを生成.
 		getSSLSocketFactory();
 	}
 }

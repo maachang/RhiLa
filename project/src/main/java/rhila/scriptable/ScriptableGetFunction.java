@@ -3,7 +3,6 @@ package rhila.scriptable;
 import org.mozilla.javascript.Scriptable;
 
 import rhila.lib.ArrayMap;
-import rhila.scriptable.BinaryScriptable.BinaryScriptableObject;
 import rhila.scriptable.ListScriptable.ListScriptableObject;
 import rhila.scriptable.LowerKeyMapScriptable.LowerKeyMapScriptableObject;
 import rhila.scriptable.MapScriptable.MapScriptableObject;
@@ -30,7 +29,7 @@ public class ScriptableGetFunction implements RhinoGetFunction {
 			,"Array", ListScriptableObject.LOAD_CRAC
 			,"JSON", JsonScriptableObject.LOAD_CRAC
 			,"Base64", Base64ScriptableObject.LOAD_CRAC
-			,"Binary", BinaryScriptableObject.LOAD_CRAC
+			,"Binary", BinaryScriptable.LOAD_CRAC
 		);
 		
 		// lambda snapStart CRaC用.

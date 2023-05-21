@@ -8,7 +8,7 @@ import org.mozilla.javascript.Undefined;
 import rhila.RhilaException;
 
 /**
- * 基本RhinoFunction定義.
+ * RhinoFunction定義.
  */
 public interface RhinoFunction extends Function {
 
@@ -46,7 +46,8 @@ public interface RhinoFunction extends Function {
 	/**
 	 * Function実装.
 	 */
-	default Object function(Context ctx, Scriptable scope, Scriptable thisObj, Object[] args) {
+	default Object function(
+		Context ctx, Scriptable scope, Scriptable thisObj, Object[] args) {
 		// 実装しない場合は空返却.
 		return Undefined.instance;
 	}

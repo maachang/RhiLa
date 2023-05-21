@@ -281,7 +281,7 @@ public class HttpRequest extends AbstractReqRes<HttpResponse> {
 		this.setDefaultHeader("accept-encoding", "gzip,deflate");
 		
 		// ヘッダを出力.
-		header.getSrc().toString(false, out);
+		header.toString(false, out);
 	}
 	
 	@Override

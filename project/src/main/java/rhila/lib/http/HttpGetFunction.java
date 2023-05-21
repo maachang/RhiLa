@@ -3,8 +3,6 @@ package rhila.lib.http;
 import org.mozilla.javascript.Scriptable;
 
 import rhila.lib.ArrayMap;
-import rhila.lib.http.HttpCookieValue.HttpCookieValueScriptable;
-import rhila.lib.http.HttpHeader.HttpHeaderScriptable;
 import rhila.lib.http.HttpStatus.HttpStatusScriptable;
 import rhila.lib.http.MimeType.MimeTypeScriptable;
 import rhila.scriptable.RhinoGetFunction;
@@ -22,8 +20,8 @@ public class HttpGetFunction implements RhinoGetFunction {
 	// 初期設定.
 	static {
 		instanceList = new ArrayMap<String, Scriptable>(
-			"HttpCookieValue", HttpCookieValueScriptable.LOAD_CRAC
-			,"HttpHeader", HttpHeaderScriptable.LOAD_CRAC
+			"HttpCookieValue", HttpCookieValue.LOAD_CRAC
+			,"HttpHeader", HttpHeader.LOAD_CRAC
 			,"HttpRequest", HttpRequest.LOAD_CRAC
 			,"HttpResponse", HttpResponse.LOAD_CRAC
 			,"HttpStatus", HttpStatusScriptable.LOAD_CRAC

@@ -9,10 +9,8 @@ import java.net.Socket;
 
 import rhila.RhilaConstants;
 import rhila.RhilaException;
-import rhila.core.Global;
 import rhila.lib.ByteArrayBuffer;
 import rhila.lib.NumberUtil;
-import rhila.lib.http.HttpCookieValue;
 import rhila.lib.http.HttpHeader;
 import rhila.lib.http.HttpReceiveChunked;
 import rhila.lib.http.HttpRequest;
@@ -26,13 +24,14 @@ import rhila.scriptable.BinaryScriptable;
 public final class HttpClient {
 	
     // lambda snapStart CRaC用.
-    protected static final HttpCookieValue LOAD_CRAC = new HttpCookieValue();
+    protected static final HttpClient LOAD_CRAC = new HttpClient();
 
 	//
 	// [memo]
 	//
 	// HTTPClientでは、以下のようにclient用のTLSバージョンを指定しないと
 	// 接続を拒否されるものもあるようです.
+    // ※RhilaSocketFactoryで設定してるので不要.
 	//
 	// -Djdk.tls.client.protocols=TLSv1.2
 	//              or
@@ -47,10 +46,45 @@ public final class HttpClient {
 	// Socketタイムアウト値(30秒).
 	private static int TIMEOUT = 30000;
 	
-	// 最大レスポンス受信(10MByte).
-	private static int MAX_RESPONSE_BODY = 0x100000 * 10;
+	// 最大レスポンス受信(6MByte).
+	// aws lambdaの最大返却値が6mbyte.
+	private static int MAX_RESPONSE_BODY = 0x100000 * 6;
 	
-	// HttpClient.
+	// [GET]URLを指定してHttpClient実行.
+	public static final HttpResponse requestGet(String url) {
+		HttpRequest req = new HttpRequest();
+		req.setURL(url);
+		return request(req);
+	}
+	
+	// [POST]URLを指定してHttpClient実行.
+	public static final HttpResponse requestPost(
+		String url, Object body) {
+		HttpRequest req = new HttpRequest();
+		req.setMethod("POST");
+		req.setURL(url);
+		req.setBodyToForm(body);
+		return request(req);
+	}
+	
+	// [JSON]URLを指定してHttpClient実行.
+	public static final HttpResponse requestJSON(
+		String url, Object body) {
+		HttpRequest req = new HttpRequest();
+		req.setMethod("POST");
+		req.setURL(url);
+		req.setBodyToJSON(body);
+		return request(req);
+	}
+	
+	// HttpRequestを指定してHttpClient実行.
+	public static final HttpResponse request(HttpRequest request) {
+		HttpResponse ret = new HttpResponse();
+		request(request, ret);
+		return ret;
+	}
+	
+	// HttpClient実行.
 	public static final void request(
 		HttpRequest request, HttpResponse response) {
 		int redirectCount = 0;

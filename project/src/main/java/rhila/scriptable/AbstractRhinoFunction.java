@@ -36,7 +36,8 @@ public abstract class AbstractRhinoFunction implements RhinoFunction {
 
 	@Override
 	public Object getDefaultValue(Class<?> clazz) {
-		return (clazz == null || String.class.equals(clazz)) ? toString() : Undefined.instance;
+		return (clazz == null || String.class.equals(clazz)) ?
+			toString() : Undefined.instance;
 	}
 
 	@Override
@@ -67,7 +68,8 @@ public abstract class AbstractRhinoFunction implements RhinoFunction {
 	@Override
 	public boolean hasInstance(Scriptable instance) {
 		if(instance != null) {
-			return this.getClassName().equals(instance.getClassName());
+			return this.getClassName()
+				.equals(instance.getClassName());
 		}
 		return false;
 	}
@@ -90,6 +92,7 @@ public abstract class AbstractRhinoFunction implements RhinoFunction {
 	
 	@Override
 	public String toString() {
-		return "function " + getName() + "() {\n  [native code]\n}";
+		return "function " + getName() +
+			"() {\n  [native code]\n}";
 	}
 }

@@ -122,16 +122,16 @@ public class JsValidate {
 		boolean res = false;
 		switch(type) {
 		case "string":
-			res = isNoArgsString(1, args);
+			res = isNoArgsString(0, args);
 			break;
 		case "boolean":
-			res = isNoArgsBoolean(1, args);
+			res = isNoArgsBoolean(0, args);
 			break;
 		case "number":
-			res = isNoArgsNumber(1, args);
+			res = isNoArgsNumber(0, args);
 			break;
 		case "date":
-			res = isNoArgsDate(1, args);
+			res = isNoArgsDate(0, args);
 			break;
 		}
 		if(res) {
@@ -155,16 +155,16 @@ public class JsValidate {
 		boolean res = false;
 		switch(type) {
 		case "string":
-			res = isNoArgsString(2, args);
+			res = isNoArgsString(1, args);
 			break;
 		case "boolean":
-			res = isNoArgsBoolean(2, args);
+			res = isNoArgsBoolean(1, args);
 			break;
 		case "number":
-			res = isNoArgsNumber(2, args);
+			res = isNoArgsNumber(1, args);
 			break;
 		case "date":
-			res = isNoArgsDate(2, args);
+			res = isNoArgsDate(1, args);
 			break;
 		}
 		if(res) {
