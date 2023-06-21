@@ -98,6 +98,9 @@ public class HttpRequest extends AbstractReqRes<HttpResponse> {
 	
 	// URLを取得.
 	public String getURL() {
+		if(protocol == null || host == null || path == null) {
+			return null;
+		}
 		if(port != null) {
 			return protocol + "://" + host + ":" + port + path;
 		}
@@ -107,6 +110,9 @@ public class HttpRequest extends AbstractReqRes<HttpResponse> {
 	// url + queryStringを取得.
 	public String getFullURL() {
 		String url = getURL();
+		if(url == null) {
+			return null;
+		}
 		String queryString = getQueryString();
 		if(queryString != null) {
 			return url + (queryString.indexOf("?") == -1 ? "?" : "&")
@@ -199,6 +205,13 @@ public class HttpRequest extends AbstractReqRes<HttpResponse> {
 	
 	// url指定からhost, path, queryStringをそれぞれ設定.
 	private final void setUrlToHostPathQueryString(String url) {
+		if(ObjectUtil.isNull(url) || url.isEmpty()) {
+			this.protocol = null;
+			this.host = null;
+			this.path = null;
+			this.port = null;
+			return;
+		}
 		String queryString = null;
 		// queryStringが存在する場合分離.
 		int p = url.indexOf("?");

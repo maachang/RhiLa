@@ -1,17 +1,14 @@
 package rhila.lib.http;
 
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;
 
-import rhila.RhilaConstants;
 import rhila.RhilaException;
 import rhila.lib.ArrayMap;
 import rhila.lib.Base64;
-import rhila.lib.DateUtil;
 import rhila.lib.JsValidate;
 import rhila.lib.http.HttpStatus.HttpStatusScriptable;
 import rhila.scriptable.AbstractRhinoFunctionInstance;
@@ -149,6 +146,7 @@ public class HttpResponse extends AbstractReqRes<HttpResponse> {
 		return buf.toString();
 	}
 	
+	/*
 	// デフォルトヘッダをセット.
 	private final HttpHeader setDefaultHeaders() {
 		final HttpHeader header = getHeader();
@@ -161,6 +159,7 @@ public class HttpResponse extends AbstractReqRes<HttpResponse> {
 		
 		return header;
 	}
+	*/
 	
 	// HTTPヘッダの文字変換.
 	public void getHttpHeaderToString(StringBuilder out) {
@@ -173,7 +172,7 @@ public class HttpResponse extends AbstractReqRes<HttpResponse> {
 		// HTTP/2.0 200 OK
 		out.append(HTTP_VERSION).append(httpVersion).append(" ")
 			.append(state).append(" ").append(message).append("\r\n");
-		HttpHeader header = setDefaultHeaders();
+		//HttpHeader header = setDefaultHeaders();
 		
 		// ヘッダ出力.
 		header.toString(true, out);
@@ -198,7 +197,8 @@ public class HttpResponse extends AbstractReqRes<HttpResponse> {
 		String bodyString = "";
 		
 		// デフォルトのHTTPヘッダを設定.
-		HttpHeader header = setDefaultHeaders();
+		//HttpHeader header = setDefaultHeaders();
+		HttpHeader header = getHeader();
 		// bodyが存在する場合.
 		if(body != null) {
 			// bodyがBinaryの場合は

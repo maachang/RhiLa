@@ -132,6 +132,27 @@ public final class HttpClient extends AbstractRhinoCustomStatic {
 		}
 	}
 	
+	// urlチェック.
+	private static final void checkURL(String url) {
+		if(ObjectUtil.isNull(url) || url.isEmpty()) {
+			throw new RhilaException(
+				"URL is not set with character specification");
+		}
+	}
+	
+	// bodyが設定されているかチェック.
+	private static final void checkBody(HttpRequest req) {
+		final String method = req.getMethod();
+		if("POST".equals(method) || "PUT".equals(method)) {
+			if(req.getBody() == null) {
+				throw new RhilaException(
+					"Body not set for required method: " +
+					method);
+			}
+		}
+	}
+
+	
 	// argsからHttpRequestを生成.
 	private static final HttpRequest _request(Object args) {
 		// argsがHttpRequestの場合.
@@ -173,6 +194,11 @@ public final class HttpClient extends AbstractRhinoCustomStatic {
 					ret.setQueryStringToMap((Map)o);
 				}
 			}
+		// 適用外のオプション設定がされている場合.
+		} else if(!ObjectUtil.isNull(args)) {
+			throw new RhilaException(
+				"Non-applicable option is set: " +
+				args.getClass().getName());
 		}
 		return ret;
 	}
@@ -269,6 +295,13 @@ public final class HttpClient extends AbstractRhinoCustomStatic {
 	// HttpClient実行.
 	public static final HttpResponse request(
 		HttpRequest request, HttpResponse response) {
+		if(request == null) {
+			throw new RhilaException("HttpRequest not set.");
+		} else if(response == null) {
+			throw new RhilaException("HttpResponse not set.");
+		}
+		checkURL(request.getURL());
+		checkBody(request);
 		int redirectCount = 0;
 		String url = request.getFullURL();
 		String srcURL = url;
