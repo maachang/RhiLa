@@ -108,19 +108,29 @@ public final class HttpHeader extends AbstractRhinoFunction {
 	}
 	
 	// クリアー.
-	public void clear() {
+	public HttpHeader clear() {
 		clearHeader();
 		clearCookie();
+		return this;
 	}
 	
 	// cookieをすべて削除.
-	public void clearHeader() {
+	public HttpHeader clearHeader() {
 		headers = null;
+		return this;
 	}
 	
 	// cookieをすべて削除.
-	public void clearCookie() {
+	public HttpHeader clearCookie() {
 		cookies = null;
+		return this;
+	}
+	
+	// ヘッダ内容をコピー.
+	public HttpHeader setHttpHeader(HttpHeader value) {
+		setHeaders(value);
+		setCookies(value);
+		return this;
 	}
 	
 	// ヘッダが存在するかチェック.
@@ -137,6 +147,28 @@ public final class HttpHeader extends AbstractRhinoFunction {
 			return null;
 		}
 		return (String)headers.get(key);
+	}
+	
+	// header群をセット.
+	@SuppressWarnings("rawtypes")
+	public int setHeaders(Map header) {
+		int ret = 0;
+		Iterator it = header.entrySet().iterator();
+		Entry e;
+		while(it.hasNext()) {
+			e = (Entry)it.next();
+			setHeader(
+				e.getKey().toString(),
+				e.getValue().toString());
+			ret ++;
+		}
+		return ret;
+	}
+	
+	// header群をセット.
+	public int setHeaders(HttpHeader header) {
+		// headerをセット.
+		return setHeaders(header.headers().getRaw());
 	}
 	
 	// ヘッダ設定.
@@ -346,6 +378,29 @@ public final class HttpHeader extends AbstractRhinoFunction {
 			}
 		}
 	}
+	
+	// cookie群をセット.
+	@SuppressWarnings("rawtypes")
+	public int setCookies(Map cookie) {
+		int ret = 0;
+		Iterator it = cookie.entrySet().iterator();
+		Entry e;
+		while(it.hasNext()) {
+			e = (Entry)it.next();
+			setCookie(
+				e.getKey().toString(),
+				e.getValue().toString());
+			ret ++;
+		}
+		return ret;
+	}
+	
+	// cookie群をセット.
+	public int setCookies(HttpHeader cookie) {
+		// cookieをセット.
+		return setHeaders(cookie.cookies().getRaw());
+	}
+	
 	
 	// cookie内容を設定.
 	//   value="value; Max-Age=2592000; Secure;"

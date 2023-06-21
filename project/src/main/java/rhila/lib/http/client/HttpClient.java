@@ -6,22 +6,28 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.util.Map;
 
 import rhila.RhilaConstants;
 import rhila.RhilaException;
+import rhila.lib.BooleanUtil;
 import rhila.lib.ByteArrayBuffer;
 import rhila.lib.NumberUtil;
+import rhila.lib.ObjectUtil;
 import rhila.lib.http.HttpHeader;
 import rhila.lib.http.HttpReceiveChunked;
 import rhila.lib.http.HttpRequest;
 import rhila.lib.http.HttpResponse;
 import rhila.lib.http.HttpUtil;
+import rhila.lib.http.MimeType;
+import rhila.scriptable.AbstractRhinoCustomStatic;
 import rhila.scriptable.BinaryScriptable;
 
 /**
  * [同期]HttpClient.
  */
-public final class HttpClient {
+@SuppressWarnings("rawtypes")
+public final class HttpClient extends AbstractRhinoCustomStatic {
 	
     // lambda snapStart CRaC用.
     protected static final HttpClient LOAD_CRAC = new HttpClient();
@@ -37,6 +43,47 @@ public final class HttpClient {
 	//              or
 	// System.setProperty("jdk.tls.client.protocols", "TLSv1.2");
 	//
+    
+	
+	/*
+	// testMain.
+	public static final void main(String[] args) throws Exception {
+		// オブジェクトの初期化.
+		Global.getInstance();
+		//System.setProperty("javax.net.debug", "all");
+		//-Dhttps.protocols=TLSv1.2
+		//-Djdk.tls.client.protocols=TLSv1.2
+		//System.setProperty("https.protocols", "TLSv1.2");
+		//System.setProperty("jdk.tls.client.protocols", "TLSv1.2");
+		String url;
+		//url = "http://127.0.0.1:3333/";
+		//url = "https://google.com/";
+		//url = "https://www.google.com/";
+		url = "https://raw.githubusercontent.com/maachang/testLFU/main/public/index.html";
+		//url = "https://yahoo.co.jp/";
+		//url = "https://ja.javascript.info/fetch-api";
+		//url = "http://www.asyura2.com";
+		// !!githubusercontentのアクセス
+		// time: 125 msec(10回実行平均)
+		// time: 300 msec(1回実行)
+		int loopLen = 1;
+		HttpRequest request = new HttpRequest();
+		HttpResponse response = new HttpResponse();
+		// １回目はSSL関連の初期化があるのではじめに一度だけ実行する.
+		request.setURL(url);
+		System.out.println("start");
+		long time = System.currentTimeMillis();
+		for(int i = 0; i < loopLen; i ++) {
+			HttpClient.request(request, response);
+		}
+		System.out.println("time: " + ((System.currentTimeMillis() - time) / loopLen) + " msec");
+		System.out.println("length: " + response.getHeader().getContentLength());
+		System.out.println("bodyLen: " + response.getBody().size());
+		System.out.println("gzip: " + response.getHeader().isGzip());
+		//System.out.println(response.getHeader());
+		System.out.println(response.getBody().isGzip());
+	}
+	*/
 
 	protected HttpClient() {}
 	
@@ -48,44 +95,179 @@ public final class HttpClient {
 	
 	// 最大レスポンス受信(6MByte).
 	// aws lambdaの最大返却値が6mbyte.
-	private static int MAX_RESPONSE_BODY = 0x100000 * 6;
+	private static int MAX_RESPONSE_BODY = 0x0100000 * 6;
 	
+	// argsにbase64条件が存在するかチェック.
+	private static final boolean isBase64Encoded(Map args) {
+		Object value = args.get("isBase64Encoded");
+		if(ObjectUtil.isNull(value)) {
+			return false;
+		}
+		return BooleanUtil.parseBoolean(value);
+	}
+	
+	// ContentTypeの条件を取得.
+	private static final String getContentType(HttpHeader header) {
+		String contentType = header.getContentType();
+		if(ObjectUtil.isNull(contentType)) {
+			return null;
+		}
+		int p = contentType.indexOf(";");
+		if(p == -1) {
+			return contentType.toLowerCase().trim();
+		} else {
+			return contentType.substring(0, p).trim().toLowerCase();
+		}
+	}
+	
+	// contentTypeが設定されていない場合設定する.
+	private static final void setDefaultContentType(
+		HttpRequest req, String contentType, String charset) {
+		if(ObjectUtil.isNull(req.getHeader().getContentType())) {
+			if(charset != null) {
+				req.getHeader().setContentType(contentType, charset);
+			} else {
+				req.getHeader().setContentType(contentType);
+			}
+		}
+	}
+	
+	// argsからHttpRequestを生成.
+	private static final HttpRequest _request(Object args) {
+		// argsがHttpRequestの場合.
+		if(args instanceof HttpRequest) {
+			return (HttpRequest)args;
+		}
+		// 新しいHttpHeaderを生成.
+		HttpRequest ret = new HttpRequest();
+		// argsがMapの場合.
+		if(args instanceof Map) {
+			Object o;
+			Map params = (Map)args;
+			// headerが存在する場合.
+			if(!ObjectUtil.isNull(o = params.get("headers"))) {
+				HttpHeader rh = ret.getHeader();
+				// ヘッダ設定がMapの場合.
+				if(o instanceof Map) {
+					rh.setHeaders((Map)o);
+				// headerがHttpHeaderの場合.
+				} else if(o instanceof HttpHeader) {
+					rh.setHttpHeader((HttpHeader)o);
+				}
+			}
+			// cookiesが存在する場合.
+			if(!ObjectUtil.isNull(o = params.get("cookies"))) {
+				HttpHeader rh = ret.getHeader();
+				// ヘッダ設定がMapの場合.
+				if(o instanceof Map) {
+					rh.setCookies((Map)o);
+				}
+			}
+			// queryStringおよびparamsが存在する場合.
+			if(!ObjectUtil.isNull(o = params.get("queryString")) ||
+				!ObjectUtil.isNull(o = params.get("query")) ||
+				!ObjectUtil.isNull(o = params.get("params"))) {
+				if(o instanceof String) {
+					ret.setQueryString((String)o);
+				} else if(o instanceof Map) {
+					ret.setQueryStringToMap((Map)o);
+				}
+			}
+		}
+		return ret;
+	}
+	
+	// bodyをセット.
+	private static final void _body(HttpRequest req, Object args) {
+		// argsがMapの場合.
+		if(args instanceof Map) {
+			Object o;
+			Map params = (Map)args;
+			// bodyが存在する場合.
+			if(!ObjectUtil.isNull(o = params.get("body"))) {
+				// binaryの場合.
+				if(o instanceof byte[]) {
+					req.setBody((byte[])o);
+				// binaryの場合.
+				} else if(o instanceof BinaryScriptable) {
+					req.setBody((BinaryScriptable)o);
+				// 文字列の場合.
+				} else if(o instanceof String) {
+					// base64設定条件を取得.
+					boolean base64Body = isBase64Encoded(params);
+					if(base64Body) {
+						// base64の場合.
+						req.setBodyToBase64((String)o);
+					} else {
+						// bodyをセット.
+						req.setBody((String)o,
+							req.getHeader().getContentType());
+					}
+				// mapの場合.
+				} else if(o instanceof Map) {
+					// bodyのContentTypeを取得.
+					String contentType = getContentType(
+						req.getHeader());
+					// contentTypeが設定されている場合.
+					if(contentType != null) {
+						// formデータ.
+						if(contentType.startsWith(MimeType.FORM_DATA)) {
+							req.setBodyToForm(o);
+						// jsonデータ.
+						} else if(contentType.startsWith(MimeType.JSON)) {
+							req.setBodyToJSON(o);
+						}
+					}
+				}
+			}
+		}
+	}
+
 	// [GET]URLを指定してHttpClient実行.
 	public static final HttpResponse requestGet(String url) {
-		HttpRequest req = new HttpRequest();
+		return requestGet(url, null);
+	}
+	
+	// [GET]URLを指定してHttpClient実行.
+	public static final HttpResponse requestGet(
+		String url, Object options) {
+		HttpRequest req = _request(options);
+		req.setMethod("GET");
 		req.setURL(url);
 		return request(req);
 	}
 	
 	// [POST]URLを指定してHttpClient実行.
 	public static final HttpResponse requestPost(
-		String url, Object body) {
-		HttpRequest req = new HttpRequest();
+		String url, Object options) {
+		HttpRequest req = _request(options);
 		req.setMethod("POST");
 		req.setURL(url);
-		req.setBodyToForm(body);
+		// form条件が存在しない場合はセット.
+		setDefaultContentType(req, MimeType.FORM_DATA, null);
+		_body(req, options);
 		return request(req);
 	}
 	
 	// [JSON]URLを指定してHttpClient実行.
 	public static final HttpResponse requestJSON(
-		String url, Object body) {
-		HttpRequest req = new HttpRequest();
+		String url, Object options) {
+		HttpRequest req = _request(options);
 		req.setMethod("POST");
 		req.setURL(url);
-		req.setBodyToJSON(body);
+		// json強制指定.
+		req.getHeader().setContentType(MimeType.JSON);
+		_body(req, options);
 		return request(req);
 	}
 	
 	// HttpRequestを指定してHttpClient実行.
 	public static final HttpResponse request(HttpRequest request) {
-		HttpResponse ret = new HttpResponse();
-		request(request, ret);
-		return ret;
+		return request(request, new HttpResponse());
 	}
 	
 	// HttpClient実行.
-	public static final void request(
+	public static final HttpResponse request(
 		HttpRequest request, HttpResponse response) {
 		int redirectCount = 0;
 		String url = request.getFullURL();
@@ -114,6 +296,7 @@ public final class HttpClient {
 				break;
 			}
 		}
+		return response;
 	}
 
 	// 1つのアクセス処理.
@@ -208,6 +391,7 @@ public final class HttpClient {
 		} else {
 			appendHeader(buf, "host", urlArray[1]);
 		}
+		// 矯正書き込みヘッダ系.
 		appendHeader(buf, "accept", "*/*");
 		appendHeader(buf, "accept-encoding", "gzip,deflate");
 		appendHeader(buf, "connection", "close");
@@ -504,38 +688,101 @@ public final class HttpClient {
 		}
 	}
 	
-	/**
-	public static final void main(String[] args) throws Exception {
-		// オブジェクトの初期化.
-		Global.getInstance();
-		//System.setProperty("javax.net.debug", "all");
-		//-Dhttps.protocols=TLSv1.2
-		//-Djdk.tls.client.protocols=TLSv1.2
-		//System.setProperty("https.protocols", "TLSv1.2");
-		//System.setProperty("jdk.tls.client.protocols", "TLSv1.2");
-		String url;
-		//url = "http://127.0.0.1:3333/";
-		//url = "https://google.com/";
-		url = "https://www.google.com/";
-		//url = "https://yahoo.co.jp/";
-		//url = "https://ja.javascript.info/fetch-api";
-		//url = "http://www.asyura2.com";
-		int loopLen = 1;
-		HttpRequest request = new HttpRequest();
-		HttpResponse response = new HttpResponse();
-		// １回目はSSL関連の初期化があるのではじめに一度だけ実行する.
-		request.setURL(url);
-		System.out.println("start");
-		long time = System.currentTimeMillis();
-		for(int i = 0; i < loopLen; i ++) {
-			HttpClient.request(request, response);
-		}
-		System.out.println("time: " + ((System.currentTimeMillis() - time) / loopLen) + " msec");
-		System.out.println("length: " + response.getHeader().getContentLength());
-		System.out.println("bodyLen: " + response.getBody().size());
-		System.out.println("gzip: " + response.getHeader().isGzip());
-		//System.out.println(response.getHeader());
-		System.out.println(response.getBody().isGzip());
+	// [js]対応メソッド.
+	private static final String[] FUNCTION_NAME_LIST = new String[] {
+		"get",
+		"json",
+		"post",
+		"request",
+	};
+
+	@Override
+	public String getName() {
+		return "HttpClient";
 	}
-	**/
+
+	@Override
+	protected String[] getFunctionNames() {
+		return FUNCTION_NAME_LIST;
+	}
+
+	@Override
+	protected Object callFunction(int type, Object[] args) {
+		switch(type) {
+		case 0: // get
+			return _get(args);
+		case 1: // json
+			return _json(args);
+		case 2: // post
+			return _post(args);
+		case 3: // request
+			return _request(args);
+		}
+		// プログラムの不具合以外にここに来ることは無い.
+		throw new RhilaException(
+			"An unspecified error (type: " + type + ") occurred");
+	}
+	
+	// 引数がない場合はエラー.
+	private static final void checkArgs(Object[] args) {
+		if(args == null || args.length <= 0) {
+			throw new RhilaException("argument does not exist");
+		}
+	}
+	
+	// urlチェック.
+	private static final void checkURL(Object[] args) {
+		if(!(args[0] instanceof String)) {
+			throw new RhilaException(
+				"URL is not set with character specification");
+		}
+	}
+	
+	// 第二引数が無い場合エラーとする.
+	private static final void checkOption(Object[] args) {
+		if(args.length == 1) {
+			throw new RhilaException("option is not set.");
+		}
+	}
+	
+	protected Object _get(Object[] args) {
+		checkArgs(args);
+		checkURL(args);
+		if(args.length >= 2) {
+			return requestGet((String)args[0], args[1]);
+		}
+		return requestGet((String)args[0]);
+	}
+	
+	protected Object _json(Object[] args) {
+		checkArgs(args);
+		checkURL(args);
+		checkOption(args);
+		return requestJSON((String)args[0], args[1]);
+	}
+	
+	protected Object _post(Object[] args) {
+		checkArgs(args);
+		checkURL(args);
+		checkOption(args);
+		return requestPost((String)args[0], args[1]);
+	}
+	
+	protected Object _request(Object[] args) {
+		checkArgs(args);
+		if(!(args[0] instanceof HttpRequest)) {
+			throw new RhilaException(
+				"First argument is not HttpRequest.");
+		}
+		if(args.length >= 2) {
+			if(!(args[1] instanceof HttpResponse)) {
+				throw new RhilaException(
+					"Second argument is not HttpResponse.");
+			}
+			return request(
+				(HttpRequest)args[0],
+				(HttpResponse)args[1]);
+		}
+		return request((HttpRequest)args[0]);
+	}
 }

@@ -12,30 +12,6 @@ public class BooleanUtil {
 	private BooleanUtil() {}
 
 	/**
-	 * 対象のオブジェクトがBooleanとして解釈できるかチェック.
-	 *
-	 * @param n 変換対象の条件を設定します.
-	 * @return boolean [true]の場合、Booleanで解釈が可能です.
-	 */
-	public static final Boolean isBoolean(Object o) {
-		if (o == null) {
-			return false;
-		} else if (o instanceof Boolean) {
-			return true;
-		} else if (o instanceof Number) {
-			return true;
-		} else if (o instanceof String) {
-			String s = ((String)o).trim().toLowerCase();
-			if (NumberUtil.isNumeric(s) || "true".equals(s) || "t".equals(s)
-				|| "on".equals(s) || "false".equals(s) || "f".equals(s)
-				|| "off".equals(s)) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	/**
 	 * Boolean変換.
 	 *
 	 * @param n 変換対象の条件を設定します.

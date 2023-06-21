@@ -14,6 +14,29 @@ public class TestMain {
 	
 	public static final void main(String[] args) throws Exception {
 		exec(args);
+		
+		/*
+		// javaのHttpClientを試す(githubリポジトリのsource)
+		// !!githubusercontentのアクセス
+		// time: 66 msec(10回実行平均)
+		// time: 300 msec(1回実行)
+		// length: 1656(gzip抜き)
+		HttpClient httpClient = HttpClient.newHttpClient();
+        // リクエストを作成
+        HttpRequest request = HttpRequest.newBuilder(
+        	URI.create("https://raw.githubusercontent.com/maachang/testLFU/main/public/index.html")).build();
+        // 同期API呼び出し
+        int loopLen = 1;
+		long time = System.currentTimeMillis();
+		HttpResponse<String> response = null;
+		for(int i = 0; i < loopLen; i ++) {
+	        response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+		}
+		System.out.println("time: " + ((System.currentTimeMillis() - time) / loopLen) + " msec");
+        System.out.println("length: " + response.body().length()); // 受信したJSON文字列を確認
+        */
+		
+		//System.out.println("sun.boot.library.path=" + System.getProperty("sun.boot.library.path"));
 	}
 	
 	public static final void exec(String args[]) throws Exception {

@@ -9,6 +9,7 @@ import org.mozilla.javascript.ScriptableObject;
 import rhila.CRaCDefine;
 import rhila.lib.LibGetFunction;
 import rhila.lib.http.HttpGetFunction;
+import rhila.lib.http.client.HttpClientGetFunction;
 import rhila.scriptable.RhilaWrapper;
 import rhila.scriptable.RhinoGetFunction;
 import rhila.scriptable.ScriptableGetFunction;
@@ -143,6 +144,7 @@ public class Global extends ImporterTopLevel {
         ,ScriptableGetFunction.getInstance()
         ,LibGetFunction.getInstance()
         ,HttpGetFunction.getInstance()
+        ,HttpClientGetFunction.getInstance()
     };
     private static final int GET_FUNCTION_LENGTH = GET_FUNCTIONS.length;
     

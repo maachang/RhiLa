@@ -49,12 +49,25 @@ public final class RhilaSocketFactory {
 		return buf.toByteArray();
 	}
 	
+	// 現在のjava実行pathからjavaHomeのパスを取得.
+	private static final String getJavaHomePath() {
+		String path = System.getProperty("sun.boot.library.path");
+		String fs = System.getProperty("file.separator");
+		int p = path.lastIndexOf(fs);
+		if(p != -1) {
+			return path.substring(0, p);
+		}
+		// 最後は必ず"/bin"なので、/が無い場合は読み込み失敗でnull返却.
+		//return System.getenv("JAVA_HOME");
+		return null;
+	}
+	
 	// JAVA_HOME以下のcacertsを取得.
 	private static final byte[] getJavaHomeCacerts() {
 		InputStream in = null;
 		try {
-			String javaHome = System.getenv("JAVA_HOME");
-			// JAVA_HOME環境変数が存在する場合.
+			// javahomeを取得.
+			String javaHome = getJavaHomePath();
 			if (javaHome != null && javaHome.length() != 0) {
 				String fs = System.getProperty("file.separator");
 				String changeitFile = new StringBuilder(javaHome)

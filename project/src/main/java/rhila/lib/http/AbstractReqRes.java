@@ -150,8 +150,16 @@ abstract class AbstractReqRes<T> extends AbstractRhinoFunction {
 	// bodyをセット.
 	public T setBody(String body, String mimeType) {
 		JsValidate.noArgsToError(body);
+		String charset = HttpUtil.getContentTypeToCharset(mimeType);
+		BinaryScriptable b;
+		// 文字コードが存在する.
+		if(charset != null) {
+			b = new BinaryScriptable(body, charset);
+		// 文字コードが存在しない場合.
+		} else {
+			b = new BinaryScriptable(body);
+		}
 		// binaryをセット.
-		BinaryScriptable b = new BinaryScriptable(body);
 		return setBody(b, mimeType);
 	}
 	

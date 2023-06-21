@@ -115,7 +115,7 @@ public class LibGetFunction implements RhinoGetFunction {
 			if(args == null || args.length == 0) {
 				return false;
 			}
-			return BooleanUtil.isBoolean(args[0]);
+			return BooleanUtil.parseBoolean(args[0]);
 		}
 	}
 	

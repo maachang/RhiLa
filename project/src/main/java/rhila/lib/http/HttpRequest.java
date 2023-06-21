@@ -1,6 +1,7 @@
 package rhila.lib.http;
 
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Map.Entry;
 
 import org.mozilla.javascript.Context;
@@ -18,6 +19,7 @@ import rhila.scriptable.MapScriptable;
 /**
  * HttpRequest.
  */
+@SuppressWarnings({ "rawtypes", "unchecked" })
 public class HttpRequest extends AbstractReqRes<HttpResponse> {
     // lambda snapStart CRaC用.
     protected static final HttpRequest LOAD_CRAC = new HttpRequest(true);
@@ -234,13 +236,24 @@ public class HttpRequest extends AbstractReqRes<HttpResponse> {
 	
 	// queryStringをセット.
 	public HttpRequest setQueryString(String queryString) {
-		if(queryString == null) {
+		if(queryString == null || queryString.isEmpty()) {
 			this.query = null;
 		} else {
 			this.query = HttpUtil.decodeHttpUrlParams(queryString, null);
 		}
 		return this;
 	}
+	
+	// queryStringをセット.
+	public HttpRequest setQueryStringToMap(Map map) {
+		if(map == null || map.isEmpty()) {
+			this.query = null;
+		} else {
+			this.query = new MapScriptable(map);
+		}
+		return this;
+	}
+
 			
 	@Override
 	public String getName() {

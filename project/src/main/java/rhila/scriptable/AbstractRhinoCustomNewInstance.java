@@ -7,13 +7,14 @@ import rhila.RhilaException;
 import rhila.lib.ArrayMap;
 
 /**
- * Rhino用のCustomObjectを作成するためのabstract class.
+ * [js]Rhino用のCustom用のObjectをnewするためのabstract class.
  * 
- *  > new CustomObject(....);
- * を実行して、それぞれFunctionコール可能なオブジェクトを作成する
- * 場合に、このabstract class を継承して実行します.
+ * rhinoの利用で
+ *   > new CustomObject(....);
+ * を実行して、それぞれFunctionコール可能なオブジェクト実装用の
+ * 継承クラスとして利用します.
  */
-public abstract class AbstractRhinoCustomObject<T>
+public abstract class AbstractRhinoCustomNewInstance<T>
 	extends AbstractRhinoFunction {
 	
 	// instance可能なFunction定義.
@@ -41,23 +42,24 @@ public abstract class AbstractRhinoCustomObject<T>
 		
 		private int type;
 		private String typeString;
-		private AbstractRhinoCustomObject object;
+		private AbstractRhinoCustomNewInstance object;
 		
 		// コンストラクタ.
 		private FunctionList() {}
 		
 		// コンストラクタ.
-		private FunctionList(int type, AbstractRhinoCustomObject o) {
+		private FunctionList(int type, AbstractRhinoCustomNewInstance o) {
 			this.type = type;
 			this.typeString = o.getFunctionNames()[type];
 			this.object = o;
 		}
 		
 		// 新しいインスタンスを生成.
+		@Override
 		public final Scriptable getInstance(Object... args) {
-			// 個々の
+			// 個々のFunction用のインスタンスを作成.
 			FunctionList ret = new FunctionList
-				(type, (AbstractRhinoCustomObject)args[0]);
+				(type, (AbstractRhinoCustomNewInstance)args[0]);
 			return ret;
 		}
 		
@@ -67,6 +69,7 @@ public abstract class AbstractRhinoCustomObject<T>
 		}
 		
 		// メソッド実行.
+		@Override
 		public Object function(
 			Context ctx, Scriptable scope, Scriptable thisObj, Object[] args) {
 			// 実行処理.
@@ -76,13 +79,20 @@ public abstract class AbstractRhinoCustomObject<T>
 	
 	// function初期化.
 	protected boolean initFunctions() {
+		return initFunctions(true);
+	}
+	
+	// function初期化.
+	// staticFlagがtrueの場合 new CustomObjectの母体として定義.
+	// staticFlagがfalseの場合 CustomObject,functionで利用できるようになる.
+	protected boolean initFunctions(boolean staticFlag) {
 		// 既に初期化済みの場合.
 		if(instanceList != null) {
 			// 処理しない.
 			return false;
 		}
 		// この処理で呼び出すオブジェクトはstaticFlagをONにする.
-		setStaticFlag(true);
+		setStaticFlag(staticFlag);
 		// 配列で直接追加.
 		String[] functionList = getFunctionNames();
 		final int len = functionList.length * 2;
@@ -195,5 +205,4 @@ public abstract class AbstractRhinoCustomObject<T>
 	
 	// toString返却を行う場合はこちらで実装.
 	protected abstract String resultToString();
-	
 }

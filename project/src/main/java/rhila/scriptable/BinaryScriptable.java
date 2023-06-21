@@ -15,7 +15,8 @@ import rhila.lib.NumberUtil;
 /**
  * Binary用Scriptable.
  */
-public class BinaryScriptable extends AbstractRhinoCustomObject<byte[]> {
+public class BinaryScriptable extends
+	AbstractRhinoCustomNewInstance<byte[]> {
 	
     // lambda snapStart CRaC用.
     protected static final BinaryScriptable LOAD_CRAC =
@@ -149,6 +150,9 @@ public class BinaryScriptable extends AbstractRhinoCustomObject<byte[]> {
 	}
 	
 	// 新しいインスタンスを生成.
+	//  > new Binary(...)
+	// を設定してnewInstanceを定義します.
+	// [js]のパラメータをargsに設定されます.
 	@SuppressWarnings("rawtypes")
 	@Override
 	public Scriptable newInstance(Object[] args) {
