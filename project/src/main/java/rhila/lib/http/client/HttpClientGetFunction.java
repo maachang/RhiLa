@@ -23,6 +23,7 @@ public class HttpClientGetFunction implements RhinoGetFunction {
 		
 		// lambda snapStart CRaC用.
 		HttpClient.LOAD_CRAC.getClass();
+		RhilaSocketFactory.LOAD_CRAC.getClass();
 	}
 	
 	// オブジェクトを取得.

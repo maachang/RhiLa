@@ -1,11 +1,13 @@
 package rhila.core;
 
 import org.mozilla.javascript.Context;
+import org.mozilla.javascript.Function;
 import org.mozilla.javascript.Scriptable;
-import org.mozilla.javascript.Undefined;
 import org.mozilla.javascript.WrappedException;
 
 import rhila.RhilaException;
+import rhila.lib.ObjectUtil;
+import rhila.scriptable.MapScriptable;
 
 /**
  * jsを実行する.
@@ -46,8 +48,8 @@ public final class RunScript {
 	// スクリプト実行.
 	public static final Object eval(
 		Scriptable scope, String script, String scriptName, int lineNo) {
-		if(scope == null || scope instanceof Undefined) {
-			scope = Global.getInstance();
+		if(ObjectUtil.isNull(scope)) {
+			scope = GlobalFactory.getGlobal();
 		}
 		try {
 			return Context.getCurrentContext().evaluateString(
@@ -66,13 +68,13 @@ public final class RunScript {
 	}
 	
 	// ライブラリヘッダ.
-	private static final String LIB_HEADER = "return (function() {\nexports = {};\n";
+	private static final String LIB_HEADER = "(function() { exports = {}; \n";
 	
 	// ライブラリフッタ.
-	private static final String LIB_FOODER = "\nreturn exports;\n})();";
+	private static final String LIB_FOODER = "\nreturn exports; })();";
 	
 	// ライブラリ開始行.
-	private static final int LIB_START_LINE = -2;
+	private static final int LIB_START_LINE = 0;
 	
 	// ライブラリ読み込み用.
 	// こんな感じで実装する.
@@ -93,4 +95,41 @@ public final class RunScript {
 			,scriptName, LIB_START_LINE);
 	}
 	
+	public static final Object loadLibrary(String script, String scriptName) {
+		return loadLibrary(null, script, scriptName);
+	}
+	
+	public static final Object loadLibrary(String script) {
+		return loadLibrary(null, script, "script");
+	}
+	
+	// exports.handlerを実行.
+	public static final Object callHandler(
+		Scriptable scope, String script, String scriptName, Object... args) {
+		if(scope == null) {
+			scope = GlobalFactory.getGlobal();
+		}
+		Context ctx;
+		if(scope instanceof Global) {
+			ctx = ((Global)scope).getContext();
+		} else {
+			ctx = GlobalFactory.getGlobal().getContext();
+		}
+		MapScriptable exports = (MapScriptable)loadLibrary(
+			scope, script, scriptName);
+		Function func = (Function)exports.get("handler");
+		return func.call(ctx, scope, exports, args);
+	}
+	
+	// exports.handlerを実行.
+	public static final Object callHandler(
+		String script, String scriptName, Object... args) {
+		return callHandler(null, script, scriptName, args);
+	}
+	
+	// exports.handlerを実行.
+	public static final Object callHandler(
+		String script, Object... args) {
+		return callHandler(null, script, "script", args);
+	}
 }

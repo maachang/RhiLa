@@ -1,8 +1,9 @@
 package rhila;
 
 import rhila.core.CoreGetFunction;
-import rhila.core.Global;
+import rhila.core.GlobalFactory;
 import rhila.lib.http.HttpGetFunction;
+import rhila.lib.http.client.HttpClientGetFunction;
 import rhila.lib.http.client.RhilaSocketFactory;
 import rhila.scriptable.ScriptableGetFunction;
 
@@ -13,36 +14,36 @@ import rhila.scriptable.ScriptableGetFunction;
 public final class CRaCDefine {
 	protected CRaCDefine() {}
 	
-	// このオブジェクト自体の定義..
+    // lambda snapStart CRaC用.
 	public static final CRaCDefine LOAD_CRAC = new CRaCDefine();
 	
-	// runtimeJava(よく使うJavaオブジェクト).
-	protected static RuntimeJavaCRaCDefine RUNTIME_JAVA =
-		RuntimeJavaCRaCDefine.LOAD_CRAC;
-	
-	// Global.
-	protected static Global GLOBAL = Global.getInstance();
-	
-	// RhilaException.
-	protected static RhilaException RHILA_EXCEPTION = new RhilaException();
-	
-	// RhilaConstants.
-	protected static RhilaConstants RHILA_CONSTANTS = RhilaConstants.LOAD_CRAC;
-	
-	// Core用LoadFunctions.
-	protected static final CoreGetFunction CORE_GET_FUNCTION =
-		CoreGetFunction.LOAD_CRAC;
-	
-	
-	// Scriptable用LoadFunctions.
-	protected static final ScriptableGetFunction SCRIPTABLE_GET_FUNCTION =
-		ScriptableGetFunction.LOAD_CRAC;
-	
-	// Http用LoadFunctions.
-	protected static final HttpGetFunction HTTP_GET_FUNCTION =
-		HttpGetFunction.LOAD_CRAC;
-	
-	// RhiLa用SocketFactory.
-	protected static final RhilaSocketFactory RHILA_SOCKET_FACTORY =
-		RhilaSocketFactory.LOAD_CRAC;
+    // Lambda snapStart用 CRaC呼び出し.
+	static {
+		// globalFactory.
+		GlobalFactory.LOAD_CRAC.getClass();
+		
+		// runtimeJava(よく使うJavaオブジェクト).
+		RuntimeJavaCRaCDefine.LOAD_CRAC.getClass();
+		
+		// RhilaException.
+		RhilaException.LOAD_CRAC.getClass();
+		
+		// RhilaConstants.
+		RhilaConstants.LOAD_CRAC.getClass();
+		
+		// Core用LoadFunctions.
+		CoreGetFunction.LOAD_CRAC.getClass();
+		
+		// Scriptable用LoadFunctions.
+		ScriptableGetFunction.LOAD_CRAC.getClass();
+		
+		// Http用LoadFunctions.
+		HttpGetFunction.LOAD_CRAC.getClass();
+		
+		// HttpClient用LoadFunctions.
+		HttpClientGetFunction.LOAD_CRAC.getClass();
+		
+		// RhiLa用SocketFactory.
+		RhilaSocketFactory.LOAD_CRAC.getClass();
+	}
 }

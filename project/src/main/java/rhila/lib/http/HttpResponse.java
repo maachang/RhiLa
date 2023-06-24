@@ -12,6 +12,7 @@ import rhila.lib.Base64;
 import rhila.lib.JsValidate;
 import rhila.lib.http.HttpStatus.HttpStatusScriptable;
 import rhila.scriptable.AbstractRhinoFunctionInstance;
+import rhila.scriptable.BinaryScriptable;
 
 /**
  * HttpResponse.
@@ -28,12 +29,15 @@ public class HttpResponse extends AbstractReqRes<HttpResponse> {
 	    "clearBody"
 	    ,"clearRedirect"
 	    ,"getBody"
+	    ,"getBodyToForm"
 	    ,"getBodyToJSON"
 	    ,"getBodyToString"
 	    ,"getHeader"
 	    ,"getHttpVersion"
 	    ,"getRedirect"
 	    ,"getStatus"
+	    ,"getStatusCode"
+	    ,"getStatusMessage"
 	    ,"isRedirect"
 	    ,"setBody"
 	    ,"setBodyToBase64"
@@ -85,6 +89,16 @@ public class HttpResponse extends AbstractReqRes<HttpResponse> {
 				new HttpStatus());
 		}
 		return status.getSrc();
+	}
+
+	// statusCodeを取得.
+	public int getStatusCode() {
+		return getStatus().getStatus();
+	}
+	
+	// statusMessageを取得.
+	public String getStatusMessage() {
+		return getStatus().getMessage();
 	}
 	
 	// redirect条件が設定されている場合.
@@ -146,21 +160,6 @@ public class HttpResponse extends AbstractReqRes<HttpResponse> {
 		return buf.toString();
 	}
 	
-	/*
-	// デフォルトヘッダをセット.
-	private final HttpHeader setDefaultHeaders() {
-		final HttpHeader header = getHeader();
-		// [header]Dateがセットされていない場合.
-		this.setDefaultHeader("date", DateUtil.toRfc822(false, new Date()));
-		// [header]Serverがセットされていない場合.
-		this.setDefaultHeader("server", RhilaConstants.SERVER_NAME);
-		// [header]connectionがセットされていない場合.
-		this.setDefaultHeader("connection", "close");
-		
-		return header;
-	}
-	*/
-	
 	// HTTPヘッダの文字変換.
 	public void getHttpHeaderToString(StringBuilder out) {
 		int state = 200;
@@ -172,7 +171,7 @@ public class HttpResponse extends AbstractReqRes<HttpResponse> {
 		// HTTP/2.0 200 OK
 		out.append(HTTP_VERSION).append(httpVersion).append(" ")
 			.append(state).append(" ").append(message).append("\r\n");
-		//HttpHeader header = setDefaultHeaders();
+		getHeader();
 		
 		// ヘッダ出力.
 		header.toString(true, out);
@@ -197,7 +196,6 @@ public class HttpResponse extends AbstractReqRes<HttpResponse> {
 		String bodyString = "";
 		
 		// デフォルトのHTTPヘッダを設定.
-		//HttpHeader header = setDefaultHeaders();
 		HttpHeader header = getHeader();
 		// bodyが存在する場合.
 		if(body != null) {
@@ -284,6 +282,68 @@ public class HttpResponse extends AbstractReqRes<HttpResponse> {
 		return new HttpResponse();
 	}
 	
+	// bodyがgzip圧縮されているかチェック.
+	public boolean isGzipBody() {
+		return super.getBody().isGzip();
+	}
+	
+	// gzipを解凍する.
+	protected void unGzipBody() {
+		// gzipの場合は解凍.
+		if(isGzipBody()) {
+			// 解凍処理.
+			super.getBody().toUnGzip();
+			// 解凍後のContentLength設定.
+			getHeader().setContentLength("" + getBody().size());
+			// 圧縮ヘッダの解除.
+			getHeader().removeHeader("content-encoding");
+		}
+	}
+	
+	// bodyを取得.
+	@Override
+	public BinaryScriptable getBody() {
+		if(body == null) {
+			return null;
+		}
+		// gzipの場合は解凍.
+		unGzipBody();
+		return super.getBody();
+	}
+	
+	// body内容を文字列で取得.
+	@Override
+	public String getBodyToString() {
+		if(body == null) {
+			return null;
+		}
+		// gzipの場合は解凍.
+		unGzipBody();
+		return super.getBodyToString();
+	}
+	
+	// body内容をJSON形式で取得.
+	@Override
+	public Object getBodyToJSON() {
+		if(body == null) {
+			return null;
+		}
+		// gzipの場合は解凍.
+		unGzipBody();
+		return super.getBodyToJSON();
+	}
+	
+	// body内容をForm形式で取得.
+	@Override
+	public Map<String, Object> getBodyToForm() {
+		if(body == null) {
+			return null;
+		}
+		// gzipの場合は解凍.
+		unGzipBody();
+		return super.getBodyToForm();
+	}
+	
 	// functionリストを生成.
 	private static final class FunctionList extends AbstractRhinoFunctionInstance {
 	    // lambda snapStart CRaC用.
@@ -324,34 +384,40 @@ public class HttpResponse extends AbstractReqRes<HttpResponse> {
 				return src.clearRedirect();
 			case 2: //"getBody"
 				return src.getBody();
-			case 3: //"getBodyToJSON"
+			case 3: // "getBodyToForm"
+				return src.getBodyToForm();
+			case 4: //"getBodyToJSON"
 				return src.getBodyToJSON();
-			case 4: //"getBodyToString"
+			case 5: //"getBodyToString"
 				return src.getBodyToString();
-			case 5: //"getHeader"
-				return src.header;
-			case 6: //"getHttpVersion"
+			case 6: //"getHeader"
+				return src.getHeader();
+			case 7: //"getHttpVersion"
 				return src.getHttpVersion();
-			case 7: //"getRedirect"
+			case 8: //"getRedirect"
 				return src.getRedirect();
-			case 8: //"getStatus"
+			case 9: //"getStatus"
 				return src.getStatus();
-			case 9: //"isRedirect"
+			case 10: //"getStatusCode"
+				return src.getStatus().getStatus();
+			case 11: //"getStatusMessage"
+				return src.getStatus().getMessage();
+			case 12: //"isRedirect"
 				return src.isRedirect();
-			case 10: //"setBody"
+			case 13: //"setBody"
 				setBodyByArgs(TYPE_PLAIN, src, args);
 				return src;
-			case 11: //"setBodyToBase64"
+			case 14: //"setBodyToBase64"
 				setBodyByArgs(TYPE_BASE64, src, args);
 				return src;
-			case 12: //"setBodyToJSON"
+			case 15: //"setBodyToJSON"
 				setBodyByArgs(TYPE_JSON, src, args);
 				return src;
-			case 13: //"setHttpVersion"
+			case 16: //"setHttpVersion"
 				JsValidate.noArgsStringToError(0, args);
 				src.setHttpVersion((String)args[0]);
 				return src;
-			case 14: //"setRedirect"
+			case 17: //"setRedirect"
 				JsValidate.noArgsToLengthToError(1, args);
 				int len = args.length;
 				if(len == 1) {
@@ -363,7 +429,7 @@ public class HttpResponse extends AbstractReqRes<HttpResponse> {
 					return src.setRedirect(
 						((Number)args[0]).intValue(), (String)args[1]);
 				}
-			case 15: //"toString"
+			case 18: //"toString"
 				return src.toString();
 			}
 			// プログラムの不具合以外にここに来ることは無い.

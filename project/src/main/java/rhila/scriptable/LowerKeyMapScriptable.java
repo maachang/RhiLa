@@ -10,6 +10,8 @@ import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.Undefined;
 
+import rhila.RhilaException;
+
 /**
  * Keyを小文字管理するMapScriptable.
  */
@@ -62,6 +64,20 @@ public class LowerKeyMapScriptable extends MapScriptable {
 	@Override
 	public Object get(Object key) {
 		return super.get(((String)key).toLowerCase());
+	}
+	
+	// [java]env取得.
+	public String getEnv(String key) {
+		return (String)get(key);
+	}
+	
+	// [java]存在必須のenv取得.
+	public String requiredEnv(String key) {
+		String ret = (String)get(key);
+		if(ret == null) {
+			throw new RhilaException(key + " is not set.");
+		}
+		return ret;
 	}
 
 	@Override

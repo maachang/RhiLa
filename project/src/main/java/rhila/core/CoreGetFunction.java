@@ -4,6 +4,7 @@ import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.Undefined;
 
+import rhila.core.Console.Log;
 import rhila.lib.ArrayMap;
 import rhila.scriptable.AbstractRhinoFunction;
 import rhila.scriptable.RhinoGetFunction;
@@ -23,6 +24,7 @@ public final class CoreGetFunction implements RhinoGetFunction {
 			"gc", Gc.LOAD_CRAC
 			,"eval", Eval.LOAD_CRAC
 			,"className", ClassName.LOAD_CRAC
+			,"log", Log.LOAD_CRAC
 			,"print", Print.LOAD_CRAC
 			,"errPrint", ErrPrint.LOAD_CRAC
 		);
@@ -30,6 +32,13 @@ public final class CoreGetFunction implements RhinoGetFunction {
 		// lambda snapStart CRaC用.
 		ProcessEnv.LOAD_CRAC.getClass();
 		RunScript.LOAD_CRAC.getClass();
+		Console.LOAD_CRAC.getClass();
+		Gc.LOAD_CRAC.getClass();
+		Eval.LOAD_CRAC.getClass();
+		ClassName.LOAD_CRAC.getClass();
+		Print.LOAD_CRAC.getClass();
+		ErrPrint.LOAD_CRAC.getClass();
+		Log.LOAD_CRAC.getClass();
 	}
 	
 	// オブジェクトを取得.
@@ -80,18 +89,7 @@ public final class CoreGetFunction implements RhinoGetFunction {
 
 		@Override
 		public Object function(Context ctx, Scriptable scope, Scriptable thisObj, Object[] args) {
-			if(args == null || args.length == 0 ||
-				args[0] == null || args[0] instanceof Undefined) {
-				System.out.println();
-			} else {
-				final int len = args.length;
-				for(int i = 0; i < len; i ++) {
-					System.out.print(args[i] + " ");
-				}
-				System.out.println();
-				
-			}
-			return Undefined.instance;
+			return Log.LOAD_CRAC.function(ctx, scope, thisObj, args);
 		}
 	}
 	
@@ -108,15 +106,17 @@ public final class CoreGetFunction implements RhinoGetFunction {
 
 		@Override
 		public Object function(Context ctx, Scriptable scope, Scriptable thisObj, Object[] args) {
-			if(args == null || args.length == 0 ||
-				args[0] == null || args[0] instanceof Undefined) {
-				System.err.println();
+			if(args == null || args.length == 0) {
+				Console.log("[ERROR]undefined");
 			} else {
-				final int len = args.length;
-				for(int i = 0; i < len; i ++) {
-					System.err.print(args[i] + " ");
+				Object o = args[0];
+				if(o == null) {
+					Console.log("[ERROR]null");
+				} else if(o instanceof Undefined) {
+					Console.log("[ERROR]null");
+				} else {
+					Console.log("[ERROR]" + o);
 				}
-				System.err.println();
 			}
 			return Undefined.instance;
 		}

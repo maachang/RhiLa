@@ -27,6 +27,8 @@ public class MapScriptable extends ScriptableObject
 	protected Scriptable parent = null;
 	protected Scriptable prototype = null;
 	
+	protected boolean writeLock = false;
+	
 	// mapオブジェクト.
 	protected Map<String, Object> map;
 	
@@ -67,6 +69,16 @@ public class MapScriptable extends ScriptableObject
 		return map;
 	}
 	
+	// writeLockされているか取得.
+	public boolean isWriteLock() {
+		return writeLock;
+	}
+	
+	// writeLockの設定.
+	public void setWriteLock(boolean f) {
+		writeLock = f;
+	}
+	
 	@Override
 	public void setParentScope(Scriptable arg0) {
 		parent = arg0;
@@ -89,11 +101,17 @@ public class MapScriptable extends ScriptableObject
 
 	@Override
 	public void delete(String arg0) {
+		if(writeLock) {
+			return;
+		}
 		map.remove(arg0);
 	}
 
 	@Override
 	public void delete(int arg0) {
+		if(writeLock) {
+			return;
+		}
 		map.remove(String.valueOf(arg0));
 	}
 	
@@ -161,6 +179,9 @@ public class MapScriptable extends ScriptableObject
 	
 	@Override
 	public void put(String arg0, Scriptable arg1, Object arg2) {
+		if(writeLock) {
+			return;
+		}
 		if(map instanceof Scriptable) {
 			((Scriptable)map).put(arg0, (Scriptable)map, RhilaWrapper.unwrap(arg2));
 		} else {
@@ -170,6 +191,9 @@ public class MapScriptable extends ScriptableObject
 
 	@Override
 	public void put(int arg0, Scriptable arg1, Object arg2) {
+		if(writeLock) {
+			return;
+		}
 		if(map instanceof Scriptable) {
 			((Scriptable)map).put(
 				String.valueOf(arg0), (Scriptable)map, RhilaWrapper.unwrap(arg2));
@@ -186,6 +210,9 @@ public class MapScriptable extends ScriptableObject
 	
 	@Override
 	public void clear() {
+		if(writeLock) {
+			return;
+		}
 		if(map instanceof Scriptable) {
 			try {
 				// clear失敗の場合は項目別に削除.
@@ -230,6 +257,9 @@ public class MapScriptable extends ScriptableObject
 
 	@Override
 	public Object put(String key, Object value) {
+		if(writeLock) {
+			return null;
+		}
 		if(map instanceof Scriptable) {
 			((Scriptable)map).put(key, (Scriptable)map, value);
 			return null;

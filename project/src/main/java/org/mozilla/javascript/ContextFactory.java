@@ -396,7 +396,7 @@ public class ContextFactory {
         }
     }
 
-    protected void onContextReleased(Context cx) {
+    public void onContextReleased(Context cx) {
         Object listeners = this.listeners;
         for (int i = 0; ; ++i) {
             Listener l = (Listener) Kit.getListener(listeners, i);

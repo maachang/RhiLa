@@ -10,7 +10,7 @@ import org.mozilla.javascript.Context;
 public class RhilaException extends RuntimeException {
 	private static final long serialVersionUID = 685708741908367818L;
     // lambda snapStart CRaC用.
-	protected static final RhilaException LOAD_CRAC = new RhilaException();
+	public static final RhilaException LOAD_CRAC = new RhilaException();
 	
 	protected int status;
 

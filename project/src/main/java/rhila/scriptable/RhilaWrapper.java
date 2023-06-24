@@ -86,10 +86,10 @@ public class RhilaWrapper {
 	@SuppressWarnings("unchecked")
 	public static final Object wrap(Object value) {
 		// 空系の場合.
-		if(value == null || value instanceof Undefined) {
-			return value;
 		// scriptableの場合.
-		} else if(value instanceof Scriptable) {
+		if(value == null ||
+			value instanceof Undefined ||
+			value instanceof Scriptable) {
 			return value;
 		// wrapper系の場合.
 		} else if(value instanceof Wrapper) {

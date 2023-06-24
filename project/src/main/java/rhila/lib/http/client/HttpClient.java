@@ -248,6 +248,36 @@ public final class HttpClient extends AbstractRhinoCustomStatic {
 			}
 		}
 	}
+	
+	// path内容をencodeURIComponentする.
+	// path 対象のパスを設定します.
+	// 戻り値: encodeURIComponent変換されたパスが返却されます.
+	public static final String encodeURIToPath(String path) {
+	    // パスが空かパス内に "%" すでにURLEncodeしている場合.
+	    if(path.length() == 0 || path.indexOf("%") != -1) {
+	        // 処理しない.
+	        return path;
+	    }
+	    String n;
+	    StringBuilder buf = new StringBuilder();
+	    final String[] list = path.split("/");
+	    final int len = list.length;
+	    // パスの区切り文字[/]を除外して、
+	    // パス名だけをURLEncodeする.
+	    for(int i = 0; i < len; i ++) {
+	        n = list[i].trim();
+	        if(n.length() == 0) {
+	            continue;
+	        }
+	        n = ObjectUtil.encodeURIComponent(n);
+	        if(buf.length() == 0) {
+	            buf.append(n);
+	        } else {
+	        	buf.append("/").append(n);
+	        }
+	    }
+	    return buf.toString();
+	}
 
 	// [GET]URLを指定してHttpClient実行.
 	public static final HttpResponse requestGet(String url) {

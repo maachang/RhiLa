@@ -37,6 +37,7 @@ public class HttpRequest extends AbstractReqRes<HttpResponse> {
 		,"getHost"
 		,"getHttpVersion"
 		,"getMethod"
+		,"getParameter"
 		,"getPath"
 		,"getPort"
 		,"getProtocol"
@@ -266,7 +267,31 @@ public class HttpRequest extends AbstractReqRes<HttpResponse> {
 		}
 		return this;
 	}
-
+	
+	// パラメータを取得する.
+	public MapScriptable getParameter() {
+		// Getメソッド, Deleteメソッド.
+		if("GET".equals(method) || "DELETE".equals(method)) {
+			// queryパラメータを取得.
+			return query;
+		// Postメソッド, Putメソッド.
+		} else if("POST".equals(method) || "PUT".equals(method)) {
+			// bodyがあるメソッドなので、ContentTypeを元に処理する.
+			String contentType = getHeader().getContentType();
+			// contentTypeが存在する場合.
+			if(!ObjectUtil.isNull(contentType)) {
+				contentType = contentType.trim().toLowerCase();
+				// formデータで設定されている場合.
+				if(contentType.startsWith(MimeType.FORM_DATA)) {
+					return (MapScriptable)getBodyToForm();
+				// jsonデータで設定されている場合.
+				} else if(contentType.startsWith(MimeType.JSON)) {
+					return (MapScriptable)getBodyToJSON();
+				}
+			}
+		}
+		return null;
+	}
 			
 	@Override
 	public String getName() {
@@ -398,40 +423,42 @@ public class HttpRequest extends AbstractReqRes<HttpResponse> {
 				return src.getHttpVersion();
 			case 7: //"getMethod"
 				return src.getMethod();
-			case 8: //"getPath"
+			case 8: //"getParameter"
+				return src.getParameter();
+			case 9: //"getPath"
 				return src.getPath();
-			case 9: //"getPort"
+			case 10: //"getPort"
 				return src.getPort();
-			case 10: //"getProtocol"
+			case 11: //"getProtocol"
 				return src.getProtocol();
-			case 11: //"getQuery"
+			case 12: //"getQuery"
 				return src.getQuery();
-			case 12: //"getQueryString"
+			case 13: //"getQueryString"
 				return src.getQueryString();
-			case 13: //"getURL"
+			case 14: //"getURL"
 				return src.getURL();
-			case 14: //"setBody"
+			case 15: //"setBody"
 				setBodyByArgs(TYPE_PLAIN, src, args);
 				return src;
-			case 15: //"setBodyToBase64"
+			case 16: //"setBodyToBase64"
 				setBodyByArgs(TYPE_BASE64, src, args);
 				return src;
-			case 16: //"setBodyToJSON"
+			case 17: //"setBodyToJSON"
 				setBodyByArgs(TYPE_JSON, src, args);
 				return src;
-			case 17: //"setHttpVersion"
+			case 18: //"setHttpVersion"
 				JsValidate.noArgsStringToError(0, args);
 				src.setHttpVersion((String)args[0]);
 				return src;
-			case 18: //"setMethod"
+			case 19: //"setMethod"
 				JsValidate.noArgsStringToError(0, args);
 				src.setMethod((String)args[0]);
 				return src;
-			case 19: //"setQueryString"
+			case 20: //"setQueryString"
 				JsValidate.noArgsStringToError(0, args);
 				src.setQueryString((String)args[0]);
 				return src;
-			case 20: //"setURL"
+			case 21: //"setURL"
 				JsValidate.noArgsToError(args);
 				if(args.length == 1) {
 					JsValidate.noArgsStringToError(0, args);
@@ -442,7 +469,7 @@ public class HttpRequest extends AbstractReqRes<HttpResponse> {
 					src.setURL((String)args[0], (String)args[1]);
 				}
 				return src;
-			case 21: //"toString"
+			case 22: //"toString"
 				return src.toString();
 			}
 			// プログラムの不具合以外にここに来ることは無い.

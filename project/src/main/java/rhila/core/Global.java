@@ -1,12 +1,10 @@
 package rhila.core;
 
 import org.mozilla.javascript.Context;
-import org.mozilla.javascript.ContextFactory;
 import org.mozilla.javascript.ImporterTopLevel;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 
-import rhila.CRaCDefine;
 import rhila.lib.LibGetFunction;
 import rhila.lib.http.HttpGetFunction;
 import rhila.lib.http.client.HttpClientGetFunction;
@@ -16,23 +14,13 @@ import rhila.scriptable.ScriptableGetFunction;
 
 /**
  * globalオブジェクト.
+ * 
+ * ※現状この実装は、Lambda実行毎にGlobal作らないので、
+ *   この場合は他のデータを保持し続ける事になるから、これは
+ *   大きな修正が必要となる.
  */
 public class Global extends ImporterTopLevel {
     private static final long serialVersionUID = 6802578607688922051L;
-    
-    // シングルトン.
-    protected static final Global SNGL = new Global();
-    
-    // Lambda snapStart用 CRaC呼び出し.
-    static {
-    	// rhila環境のCRaC呼び出し
-    	CRaCDefine.LOAD_CRAC.getClass();
-    	
-    	// GlobalのCRaC呼び出し
-		initContextFactory(new ContextFactory());
-		// script実行での実行関連のCRaC呼び出し.
-		RunScript.eval("1 + 1;");
-    }
     
     // rhino js Optimization Level.
     // 最適化なし.
@@ -42,19 +30,14 @@ public class Global extends ImporterTopLevel {
     // rhinoでの現状の最大サポート.
     private static final int SCRIPT_LANGUAGE_VERSION = Context.VERSION_ES6;
     
-    // context.
-    private Context ctx = null;
+    // [rhino]context.
+    private Context ctx;
     
-    // lambda用Context.
+    // [lambda]Context.
     private com.amazonaws.services.lambda.runtime.Context lambdaCtx;
     
     // env定義.
     private ProcessEnv env;
-    
-    // 新しいglobalオブジェクトを取得.
-    public static final Global getInstance() {
-    	return SNGL;
-    }
     
     // コンストラクタ.
     protected Global() {}
@@ -69,7 +52,8 @@ public class Global extends ImporterTopLevel {
         return env;
     }
     
-    public Global setEnv(ProcessEnv env) {
+    // env設定.
+    protected Global setEnv(ProcessEnv env) {
     	this.env = env;
         ScriptableObject.deleteProperty(this, "env");
         ScriptableObject.putConstProperty(this, "env", env);
@@ -94,19 +78,8 @@ public class Global extends ImporterTopLevel {
         return "[global]";
     }
     
-    // ContextFactory初期化処理.
-    private static final void initContextFactory(
-        ContextFactory factory) {
-    	SNGL.initGlobal(factory.enterContext());
-    }
-    
     // 初期化処理.
-    private void initGlobal(Context ctx) {
-        // processEnvが設定されていない
-        if(env == null) {
-            // 新規作成.
-            env = new ProcessEnv();
-        }
+    protected void initGlobal(Context ctx) {
         this.ctx = ctx;
         
         // javaPrimitiveのwrapをOff.
@@ -118,7 +91,7 @@ public class Global extends ImporterTopLevel {
         // 言語バージョンを設定.
         ctx.setLanguageVersion(SCRIPT_LANGUAGE_VERSION);
         
-        // スタンダードオブジェクトを呼び出す.
+        // スタンダードオブジェクトを利用する.
         super.initStandardObjects(ctx, false);
         
         // 登録済み変数の削除.
@@ -136,6 +109,9 @@ public class Global extends ImporterTopLevel {
         
         // 変数定義.
         ScriptableObject.putConstProperty(this, "global", this);
+        
+        // envが設定されていない場合の反映.
+        getEnv();
     }
     
     // 利用可能なGlobalFunction群登録リスト.
