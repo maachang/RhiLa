@@ -25,29 +25,33 @@ public final class RunScript {
 	}
 	
 	// スクリプト実行.
-	public static final Object eval(String script, String scriptName) {
+	public static final Object eval(
+		String script, String scriptName) {
 		return eval(null, script, scriptName, 1);
 	}
 	
 	// スクリプト実行.
-	public static final Object eval(String script, String scriptName, int lineNo) {
+	public static final Object eval(
+		String script, String scriptName, int lineNo) {
 		return eval(null, script, scriptName, lineNo);
 	}
 	
 	// スクリプト実行.
-	public static final Object eval(Scriptable scope, String script) {
+	public static final Object eval(
+		Scriptable scope, String script) {
 		return eval(scope, script, "eval", 1);
 	}
 	
 	// スクリプト実行.
 	public static final Object eval(
-			Scriptable scope, String script, String scriptName) {
+		Scriptable scope, String script, String scriptName) {
 		return eval(scope, script, scriptName, 1);
 	}
 	
 	// スクリプト実行.
 	public static final Object eval(
-		Scriptable scope, String script, String scriptName, int lineNo) {
+		Scriptable scope, String script, String scriptName,
+		int lineNo) {
 		if(ObjectUtil.isNull(scope)) {
 			scope = GlobalFactory.getGlobal();
 		}
@@ -68,10 +72,10 @@ public final class RunScript {
 	}
 	
 	// ライブラリヘッダ.
-	private static final String LIB_HEADER = "(function() { exports = {}; \n";
+	private static final String LIB_HEADER = "(function(){'use strict';exports={}; \n";
 	
 	// ライブラリフッタ.
-	private static final String LIB_FOODER = "\nreturn exports; })();";
+	private static final String LIB_FOODER = "\nreturn exports;})();";
 	
 	// ライブラリ開始行.
 	private static final int LIB_START_LINE = 0;
@@ -85,7 +89,8 @@ public final class RunScript {
 	// return exports;
 	// })();
 	//
-	public static final Object loadLibrary(Scriptable scope, String script, String scriptName) {
+	public static final Object loadLibrary(
+		Scriptable scope, String script, String scriptName) {
 		return eval(
 			scope
 			,new StringBuilder(LIB_HEADER)
@@ -95,7 +100,8 @@ public final class RunScript {
 			,scriptName, LIB_START_LINE);
 	}
 	
-	public static final Object loadLibrary(String script, String scriptName) {
+	public static final Object loadLibrary(
+		String script, String scriptName) {
 		return loadLibrary(null, script, scriptName);
 	}
 	
@@ -105,7 +111,8 @@ public final class RunScript {
 	
 	// exports.handlerを実行.
 	public static final Object callHandler(
-		Scriptable scope, String script, String scriptName, Object... args) {
+		Scriptable scope, String script, String scriptName,
+		Object... args) {
 		if(scope == null) {
 			scope = GlobalFactory.getGlobal();
 		}

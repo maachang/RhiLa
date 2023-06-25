@@ -38,6 +38,9 @@ public class MimeType {
 
 	// [mimeType]json.
 	public static final String JSON = "application/json";
+	
+	// [mimeType]html.
+	public static final String HTML = "text/html";
 
 	// [mimeType]gz.
 	public static final String GZ = "application/gzip";

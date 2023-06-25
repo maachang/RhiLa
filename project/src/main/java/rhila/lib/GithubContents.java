@@ -100,6 +100,58 @@ public class GithubContents {
 		}
 	}
 	
+	// [public]指定パスから文字列コンテンツを取得.
+	// path 対象のパス名を設定します.
+	// 戻り値: 文字列が返却されます.
+	public static final String getPublicContents(String path) {
+		return getPublicContents(path, null);
+	}
+	
+	// [public]指定パスから文字列コンテンツを取得.
+	// path 対象のパス名を設定します.
+	// charset 文字コードを設定します.
+	// 戻り値: 文字列が返却されます.
+	public static final String  getPublicContents(
+		String path, String charset) {
+	    // githubからコンテンツを取得.
+	    HttpResponse res = readPublic(path);
+	    checkStatus(res, path);
+	    
+	    // charsetが設定されている場合.
+	    if(!ObjectUtil.isNull(charset)) {
+	        // binaryから文字列変換(charsetで変換).
+	        return res.getBody().convertString(charset);
+	    }
+        // binaryから文字列変換
+        return res.getBodyToString();
+	}
+	
+	// [lib]指定パスから文字列コンテンツを取得.
+	// path 対象のパス名を設定します.
+	// 戻り値: 文字列が返却されます.
+	public static final String  getLibContents(String path) {
+		return getLibContents(path, null);
+	}
+	
+	// [lib]指定パスから文字列コンテンツを取得.
+	// path 対象のパス名を設定します.
+	// charset 文字コードを設定します.
+	// 戻り値: 文字列が返却されます.
+	public static final String  getLibContents(
+		String path, String charset) {
+	    // githubからコンテンツを取得.
+	    HttpResponse res = readLibrary(path);
+	    checkStatus(res, path);
+	    
+	    // charsetが設定されている場合.
+	    if(!ObjectUtil.isNull(charset)) {
+	        // binaryから文字列変換(charsetで変換).
+	        return res.getBody().convertString(charset);
+	    }
+        // binaryから文字列変換
+        return res.getBodyToString();
+	}
+	
     // requireキャッシュ.
     private static final ArrayMap<String, Object> REQUIRE_CACHE =
     	new ArrayMap<String, Object>();
@@ -107,6 +159,12 @@ public class GithubContents {
     // require.
     // この処理は基本的にjs内で呼び出される.
 	public static final Object require(String src) {
+		return require(src, null);
+	}
+    
+    // require.
+    // この処理は基本的にjs内で呼び出される.
+	public static final Object require(String src, String charset) {
 		// jsonやjsの拡張子が存在しない場合.
 		if(!src.endsWith(".json") && !src.endsWith(".js")) {
 			src = src + ".js";
@@ -117,16 +175,15 @@ public class GithubContents {
 			return o;
 		}
 		// 取得処理.
-		HttpResponse res = GithubContents.readLibrary(src);
-		// ステータスチェック.
-		checkStatus(res, src);
+		String value = getLibContents(src, charset);
 		// json返却.
 		if(src.endsWith(".json")) {
-			return Json.decode(src);
+			return Json.decode(value);
 		}
 		// ライブラリ読み込み.
-		o = RunScript.loadLibrary(res.getBodyToString(), src);
-		// exportsの取得成功(普通は必ず取得できる)
+		o = RunScript.loadLibrary(value, src);
+		value = null;
+		// exportsの取得成功.
 		if(o instanceof MapScriptable) {
 			REQUIRE_CACHE.put(src, o);
 			return o;

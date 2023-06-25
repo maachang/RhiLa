@@ -3,9 +3,9 @@ package rhila.core;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.ContextFactory;
 
-import rhila.CRaCDefine;
-
-// globalFactory.
+/**
+ * globalFactory.
+ */
 public class GlobalFactory {
 	protected GlobalFactory() {}
 	
@@ -90,7 +90,7 @@ public class GlobalFactory {
 		}
 	}
 	
-    // processEnvを取得.
+    // processEnv取得.
     public ProcessEnv getEnv() {
     	// 存在しない場合は作成する.
     	if(env == null) {
@@ -99,7 +99,7 @@ public class GlobalFactory {
         return env;
     }
     
-    // env設定.
+    // processEnv設定.
     public GlobalFactory setEnv(ProcessEnv env) {
     	this.env = env;
         // 設定された内容は書き込み禁止とする.

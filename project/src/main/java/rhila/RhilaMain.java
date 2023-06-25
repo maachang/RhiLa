@@ -15,8 +15,8 @@ import rhila.core.GlobalFactory;
 public class RhilaMain implements
 	RequestHandler<Map<String,Object>, Map<String,Object>> {
 	
+	// Lambda snapStart用 CRaC呼び出し.
 	static {
-		// Lambda snapStart用 CRaC呼び出し.
 		CRaCDefine.LOAD_CRAC.getClass();
 	}
 	
