@@ -53,6 +53,8 @@ abstract class AbstractReqRes<T> extends AbstractRhinoFunction {
 	public T setHttpVersion(String version) {
 		if(version == null) {
 			version = "1.1";
+		} else if(httpVersion.toUpperCase().startsWith("HTTP/")) {
+			version = version.substring(5);
 		}
 		this.httpVersion = version;
 		return (T)this;

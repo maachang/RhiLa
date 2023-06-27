@@ -10,6 +10,7 @@ import java.util.Map.Entry;
 
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;
+import org.mozilla.javascript.Undefined;
 
 import rhila.RhilaException;
 import rhila.lib.ArrayMap;
@@ -673,13 +674,13 @@ public final class HttpHeader extends AbstractRhinoFunction {
 			switch(type) {
 			case 0: //"clear"
 				object.clear();
-				return null;
+				return object;
 			case 1: //"clearCookie"
 				object.clearCookie();
-				return null;
+				return object;
 			case 2: //"clearHeader"
 				object.clearHeader();
-				return null;
+				return object;
 			case 3: //"getCharset"
 				return object.getCharset();
 			case 4: //"getContentLength"
@@ -714,7 +715,7 @@ public final class HttpHeader extends AbstractRhinoFunction {
 				return object.removeHeader((String)args[0]);
 			case 17: //"setContentLength"
 				object.setContentLength(args[0]);
-				return null;
+				return object;
 			case 18: //"setContentType"
 				JsValidate.noArgsToError(args);
 				if(args.length == 1) {
@@ -725,15 +726,15 @@ public final class HttpHeader extends AbstractRhinoFunction {
 					JsValidate.noArgsStringToError(1, args);
 					object.setContentType((String)args[0], (String)args[1]);
 				}
-				return null;
+				return object;
 			case 19: //"setCookie"
 				setCookieToArgs(object, args);
-				return null;
+				return object;
 			case 20: //"setHeader"
 				JsValidate.noArgsKeyToTypeError("string", args);
 				JsValidate.noArgsValueToTypeError("string", args);
 				object.setHeader((String)args[0], (String)args[1]);
-				return null;
+				return object;
 			case 21: //"toString"
 				return object.toString();
 			}

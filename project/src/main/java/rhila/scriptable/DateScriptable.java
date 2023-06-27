@@ -31,16 +31,17 @@ public class DateScriptable extends java.util.Date
 	private static final String[] FUNCTION_NAMES = new String[] {
 		"getDate","getDay",
 		"getFullYear","getHours",
-		"getMinutes","getMonth",
+		"getMilliseconds", "getMinutes","getMonth",
 		"getSeconds","getTime",
 		"getTimezoneOffset","getYear",
 		"nano",
 		"now",
 		"setDate","setFullYear",
-		"setHours","setMinutes",
+		"setHours","setMilliseconds",
+		"setMinutes",
 		"setMonth","setSeconds",
 		"setTime","setYear",
-		"toGMTString","toLocaleString",
+		"toLocaleString",
 		"toString"
 	};
 	
@@ -119,7 +120,7 @@ public class DateScriptable extends java.util.Date
 	// 4: mm 分
 	// 5: ss 秒
 	public DateScriptable(Object... args) {
-		int yyyy = convNumOrDef(args, 0, 1970);
+		int yyyy = convNumOrDef(args, 0, 1900);
 		int MM = convNumOrDef(args, 1, -1);
 		int dd = convNumOrDef(args, 2, 0);
 		int hh = convNumOrDef(args, 3, 0);
@@ -199,7 +200,7 @@ public class DateScriptable extends java.util.Date
 	}
 	@Override
 	public int getTimezoneOffset() {
-		return date.getTimezoneOffset();
+		return 0;
 	}
 	@Override
 	public int getYear() {
@@ -238,10 +239,6 @@ public class DateScriptable extends java.util.Date
 		date.setYear(year);
 	}
 	@Override
-	public String toGMTString() {
-		return date.toGMTString();
-	}
-	@Override
 	public Instant toInstant() {
 		return date.toInstant();
 	}
@@ -256,6 +253,22 @@ public class DateScriptable extends java.util.Date
 	public int getFullYear() {
 		return date.getYear() + 1900;
 	}
+	
+	// ミリ秒設定.
+	public void setMilliseconds(int sss) {
+		// 1000の単位で丸めてセット.
+		date = new Date(
+			((long)(date.getTime() / 1000L) * 1000L)
+			+ (sss % 1000));
+	}
+	
+	// ミリ秒を取得.
+	public long getMilliseconds() {
+		long t = date.getTime();
+		return (t - ((long)(t / 1000L)) * 1000L);
+	}
+	
+	
 	
 	///////////
 	// js実装.
@@ -391,57 +404,61 @@ public class DateScriptable extends java.util.Date
 					return src.getYear() + 1900;
 				case 3: //"getHours":
 					return src.getHours();
-				case 4: //"getMinutes":
+				case 4: // "getMilliseconds"
+					return src.getMilliseconds();
+				case 5: //"getMinutes":
 					return src.getMinutes();
-				case 5: //"getMonth":
+				case 6: //"getMonth":
 					return src.getMonth();
-				case 6: //"getSeconds":
+				case 7: //"getSeconds":
 					return src.getSeconds();
-				case 7: //"getTime":
+				case 8: //"getTime":
 					return src.getTime();
-				case 8: //"getTimezoneOffset":
+				case 9: //"getTimezoneOffset":
 					return src.getTimezoneOffset();
-				case 9: //"getYear":
+				case 10: //"getYear":
 					return src.getYear();
-				case 10: //"nano":
+				case 11: //"nano":
 					return System.nanoTime();
-				case 11: //"now":
+				case 12: //"now":
 					return System.currentTimeMillis();
-				case 20: //"toGMTString":
-					return src.toGMTString();
-				case 21: //"toLocaleString":
+				case 22: //"toLocaleString":
 					return src.toLocaleString();
-				case 22: //"toString":
-					return DateUtil.toISO8601(src);
+				case 23: //"toString":
+					//return DateUtil.toISO8601(src);
+					return DateUtil.toUTC(src);
 				}
 			} else {
 				// 引数が必要な場合.
 				Object o = args[0];
 				switch (type) {
-				case 12: //"setDate":
+				case 13: //"setDate":
 					src.setDate(NumberUtil.parseInt(o));
-					break;
-				case 13: //"setFullYear":
+					return src;
+				case 14: //"setFullYear":
 					src.setYear(NumberUtil.parseInt(o) - 1900);
-					break;
-				case 14: //"setHours":
+					return src;
+				case 15: //"setHours":
 					src.setHours(NumberUtil.parseInt(o));
-					break;
-				case 15: //"setMinutes":
+					return src;
+				case 16: //"setMilliseconds"
+					src.setMilliseconds(NumberUtil.parseInt(o));
+					return src;
+				case 17: //"setMinutes":
 					src.setMinutes(NumberUtil.parseInt(o));
-					break;
-				case 16: //"setMonth":
+					return src;
+				case 18: //"setMonth":
 					src.setMonth(NumberUtil.parseInt(o));
-					break;
-				case 17: //"setSeconds":
+					return src;
+				case 19: //"setSeconds":
 					src.setSeconds(NumberUtil.parseInt(o));
-					break;
-				case 18: //"setTime":
+					return src;
+				case 20: //"setTime":
 					src.setTime(NumberUtil.parseLong(o));
-					break;
-				case 19: //"setYear":
+					return src;
+				case 21: //"setYear":
 					src.setYear(NumberUtil.parseInt(o));
-					break;
+					return src;
 				}
 			}
 			// プログラムの不具合以外にここに来ることは無い.

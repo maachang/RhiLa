@@ -7,10 +7,17 @@ import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Undefined;
 import org.mozilla.javascript.Version;
 
+import rhila.CRaCDefine;
+
 /**
  * コマンド実行テスト用.
  */
 public class TestMain {
+	
+	// Lambda snapStart用 CRaC呼び出し.
+	static {
+		CRaCDefine.LOAD_CRAC.getClass();
+	}
 	
 	public static final void main(String[] args) throws Exception {
 		exec(args);

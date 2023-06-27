@@ -221,6 +221,38 @@ public class DateUtil {
 		}
 		throw new RhilaException("Incorrect webTime format:" + value);
 	}
+	
+	/**
+	 * UTC文字列変換.
+	 * @param d
+	 * @return
+	 */
+	@SuppressWarnings("deprecation")
+	public static final String toUTC(java.util.Date d) {
+		String y = "" + (d.getYear() + 1900);
+		String M = "" + (d.getMonth() + 1);
+		String D = "" + d.getDate();
+		String H = "" + d.getHours();
+		String m = "" + d.getMinutes();
+		String s = "" + d.getSeconds();
+		long t = d.getTime();
+		String sss = "" + (t - ((long)(t / 1000L)) * 1000L);
+		return new StringBuilder()
+			.append("0000".substring(y.length())).append(y)
+			.append("-")
+			.append("00".substring(M.length())).append(M)
+			.append("-")
+			.append("00".substring(D.length())).append(D)
+			.append("T")
+			.append("00".substring(H.length())).append(H)
+			.append(":")
+			.append("00".substring(m.length())).append(m)
+			.append(":")
+			.append("00".substring(s.length())).append(s)
+			.append(".")
+			.append("000".substring(sss.length())).append(sss)
+			.append("Z").toString();
+	}
 
 	/**
 	 * DateオブジェクトをISO8601形式(yyyy-MM-dd'T'HH:mm:ssXXX)で文字列変換.
@@ -406,6 +438,63 @@ public class DateUtil {
 		EXTENTION_DTF.offer(new ConvertDateTime(dateTime, format));
 		return true;
 	}
+	
+	// 文字列からYmdHmsSSSのDateオブジェクトを生成.
+	@SuppressWarnings("deprecation")
+	private static final java.util.Date stringToYmdHms(String s) {
+		List<String> list = new ArrayList<String>();
+		ObjectUtil.cutString(list, false, s, "-/:tTzZ");
+		int len = list.size();
+		if(len == 1) {
+			return new Date(Long.parseLong(s));
+		} else if(len == 2) {
+			return new Date(
+				Integer.parseInt(list.get(0)) - 1900
+				,Integer.parseInt(list.get(1)) - 1
+				,1);
+		} else if(len == 3) {
+			return new Date(
+				Integer.parseInt(list.get(0)) - 1900
+				,Integer.parseInt(list.get(1)) - 1
+				,Integer.parseInt(list.get(2))
+				, 0, 0, 0);
+		} else if(len == 4) {
+			return new Date(
+				Integer.parseInt(list.get(0)) - 1900
+				,Integer.parseInt(list.get(1)) - 1
+				,Integer.parseInt(list.get(2))
+				,Integer.parseInt(list.get(3))
+				,0, 0);
+		} else if(len == 5) {
+			return new Date(
+				Integer.parseInt(list.get(0)) - 1900
+				,Integer.parseInt(list.get(1)) - 1
+				,Integer.parseInt(list.get(2))
+				,Integer.parseInt(list.get(3))
+				,Integer.parseInt(list.get(4))
+				,0);
+		} else if(len == 6) {
+			return new Date(
+				Integer.parseInt(list.get(0)) - 1900
+				,Integer.parseInt(list.get(1)) - 1
+				,Integer.parseInt(list.get(2))
+				,Integer.parseInt(list.get(3))
+				,Integer.parseInt(list.get(4))
+				,Integer.parseInt(list.get(5)));
+		} else if(len != 0) {
+			Date ret = new Date(
+				Integer.parseInt(list.get(0)) - 1900
+				,Integer.parseInt(list.get(1)) - 1
+				,Integer.parseInt(list.get(2))
+				,Integer.parseInt(list.get(3))
+				,Integer.parseInt(list.get(4))
+				,Integer.parseInt(list.get(5)));
+			return new Date(
+				ret.getTime() + Long.parseLong(list.get(6)));
+		} else {
+			return new Date();
+		}
+	}
 
 	/**
 	 * オブジェクトをDateオブジェクトに変換.
@@ -421,6 +510,9 @@ public class DateUtil {
 			return new java.util.Date(((Number)v).longValue());
 		} else if(v instanceof String) {
 			String s = (String)v;
+			try {
+				return stringToYmdHms(s);
+			} catch(Exception e) {}
 			if(isISO8601(s)) {
 				return toISO8601(s);
 			} else if(NumberUtil.isNumeric(s)) {

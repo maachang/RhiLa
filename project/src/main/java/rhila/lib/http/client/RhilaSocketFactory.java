@@ -160,7 +160,7 @@ public final class RhilaSocketFactory {
 
 	/** Socket基本オプション. **/
 	private static final int LINGER = 0;
-	private static final int SENDBUF = 8192;
+	private static final int SENDBUF = 65535;
 	private static final int RECVBUF = 65535;
 	private static final boolean TCP_NODELAY = false;
 	private static final boolean KEEP_ALIVE = false;
@@ -174,7 +174,9 @@ public final class RhilaSocketFactory {
 		soc.setReceiveBufferSize(RECVBUF);
 		soc.setKeepAlive(KEEP_ALIVE);
 		soc.setTcpNoDelay(TCP_NODELAY);
-		soc.setSoTimeout(timeout);
+		if(timeout > 0) {
+			soc.setSoTimeout(timeout);
+		}
 	}
 
 	/** SSLSocket生成. **/
