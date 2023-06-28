@@ -3,6 +3,8 @@ package rhila.scriptable;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.Undefined;
 
+import rhila.RhilaException;
+
 /**
  * RhinoFunction雛形.
  * 
@@ -95,4 +97,15 @@ public abstract class AbstractRhinoFunction implements RhinoFunction {
 		return "function " + getName() +
 			"() {\n  [native code]\n}";
 	}
+	
+	// argsチェック.
+	protected void checkArgs(
+		Object[] args, int no, String oname, String name) {
+		if(args[no] == null || args[no] instanceof Undefined) {
+			throw new RhilaException(
+				"The " + (no+1) + " th argument of " + name +
+				" function for target " + oname + " is incorrect.");
+		}
+	}
+
 }

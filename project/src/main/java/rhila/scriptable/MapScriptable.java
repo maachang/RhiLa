@@ -47,21 +47,23 @@ public class MapScriptable extends ScriptableObject
 	}
 	
 	// コンストラクタ.
-	public MapScriptable(Object[] args) {
-		Map<String, Object> m = new HashMap<String, Object>();
-		final int len = args == null ? 0 : args.length;
-		for(int i = 0; i < len; i += 2) {
-			m.put((String)args[i], args[i + 1]);
-		}
-	}
-	
-	// コンストラクタ.
 	public MapScriptable(List<Object> args) {
 		Map<String, Object> m = new HashMap<String, Object>();
 		final int len = args == null ? 0 : args.size();
 		for(int i = 0; i < len; i += 2) {
 			m.put((String)args.get(i), args.get(i + 1));
 		}
+		this.map = m;
+	}
+	
+	// コンストラクタ.
+	public MapScriptable(Object... args) {
+		Map<String, Object> m = new HashMap<String, Object>();
+		final int len = args == null ? 0 : args.length;
+		for(int i = 0; i < len; i += 2) {
+			m.put((String)args[i], args[i + 1]);
+		}
+		this.map = m;
 	}
 	
 	//@Override

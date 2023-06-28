@@ -227,8 +227,25 @@ public class DateUtil {
 	 * @param d
 	 * @return
 	 */
-	@SuppressWarnings("deprecation")
 	public static final String toUTC(java.util.Date d) {
+		return toUTC(d, "");
+	}
+	
+	/**
+	 * UTC文字列変換.
+	 * @param d
+	 * @param mode
+	 * @return
+	 */
+	@SuppressWarnings("deprecation")
+	public static final String toUTC(
+		java.util.Date d, Object mode) {
+		String md;
+		if(mode instanceof String) {
+			md = ((String)mode).toLowerCase();
+		} else {
+			md = "";
+		}
 		String y = "" + (d.getYear() + 1900);
 		String M = "" + (d.getMonth() + 1);
 		String D = "" + d.getDate();
@@ -237,19 +254,37 @@ public class DateUtil {
 		String s = "" + d.getSeconds();
 		long t = d.getTime();
 		String sss = "" + (t - ((long)(t / 1000L)) * 1000L);
-		return new StringBuilder()
-			.append("0000".substring(y.length())).append(y)
-			.append("-")
-			.append("00".substring(M.length())).append(M)
-			.append("-")
-			.append("00".substring(D.length())).append(D)
-			.append("T")
-			.append("00".substring(H.length())).append(H)
-			.append(":")
-			.append("00".substring(m.length())).append(m)
-			.append(":")
-			.append("00".substring(s.length())).append(s)
-			.append(".")
+		StringBuilder buf = new StringBuilder()
+			.append("0000".substring(y.length())).append(y);
+		if("year".equals(md)) {
+			return buf.toString();
+		}
+		buf.append("-")
+			.append("00".substring(M.length())).append(M);
+		if("month".equals(md)) {
+			return buf.toString();
+		}
+		buf.append("-")
+			.append("00".substring(D.length())).append(D);
+		if("date".equals(md)) {
+			return buf.toString();
+		}
+		buf.append("T")
+			.append("00".substring(H.length())).append(H);
+		if("hours".equals(md)) {
+			return buf.toString();
+		}
+		buf.append(":")
+			.append("00".substring(m.length())).append(m);
+		if("minutes".equals(md)) {
+			return buf.toString();
+		}
+		buf.append(":")
+			.append("00".substring(s.length())).append(s);
+		if("seconds".equals(md)) {
+			return buf.toString();
+		}
+		return buf.append(".")
 			.append("000".substring(sss.length())).append(sss)
 			.append("Z").toString();
 	}
@@ -300,7 +335,7 @@ public class DateUtil {
 	 */
 	public static final boolean isISO8601(String s) {
 		int code = 0;
-		int len = s.length();
+		int len = s.toLowerCase().length();
 		char c;
 		for (int i = 0; i < len; i++) {
 			c = s.charAt(i);
@@ -314,7 +349,7 @@ public class DateUtil {
 				}
 				break;
 			case 2:
-				if (c == 'T') {
+				if (c == 't') {
 					code++;
 				} else if (!(c >= '0' && c <= '9')) {
 					return false;
@@ -441,7 +476,7 @@ public class DateUtil {
 	
 	// 文字列からYmdHmsSSSのDateオブジェクトを生成.
 	@SuppressWarnings("deprecation")
-	private static final java.util.Date stringToYmdHms(String s) {
+	public static final java.util.Date stringToYmdHms(String s) {
 		List<String> list = new ArrayList<String>();
 		ObjectUtil.cutString(list, false, s, "-/:tTzZ");
 		int len = list.size();

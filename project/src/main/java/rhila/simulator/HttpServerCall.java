@@ -205,6 +205,7 @@ final class HttpServerCall implements Runnable {
 		int contentLength)
 		throws Exception {
 		int len;
+		int srcContentLength = contentLength;
 		byte[] b = new byte[RECEIVE_BUCKET_LENGTH];
 		contentLength -= buf.size();
 		while(contentLength > 0) {
@@ -214,7 +215,10 @@ final class HttpServerCall implements Runnable {
 			buf.write(b, 0, len);
 			contentLength -= len;
 		}
-		req.setBody(buf.toByteArray());
+		// Content-Length分を取得.
+		b = new byte[srcContentLength];
+		buf.read(b);
+		req.setBody(b);
 	}
 	
 	// chunkedでBody情報を取得.
@@ -243,6 +247,7 @@ final class HttpServerCall implements Runnable {
 		req.setBody(buf.toByteArray());
 	}
 	
+	// response書き込み.
 	private final void writeResponse(HttpResponse res)
 		throws Exception {
 		

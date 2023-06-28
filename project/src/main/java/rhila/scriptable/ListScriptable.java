@@ -65,7 +65,7 @@ public class ListScriptable
 	}
 	
 	// コンストラクタ.
-	public ListScriptable(Object[] array) {
+	public ListScriptable(Object... array) {
 		if(array == null || array.length == 0) {
 			this.list = new ArrayList<Object>();
 			return;
